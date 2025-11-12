@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { BlurView } from "expo-blur";
 import Constants from "expo-constants";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
@@ -23,7 +23,10 @@ export default function HomeScreen() {
   const [volume, setVolume] = useState(0.5);
 
   // --- HANDLERS ---
-  const handlePlayPress = () => console.log("Mulai Main!");
+  const handlePlayPress = () => {
+    console.log("Mulai Main!");
+    router.replace("/kamar");
+  };
   const handleInfoPress = () => console.log("Tombol Info Ditekan");
   const handleSettingsPress = () => setSettingsModalVisible(true);
   const handleExitGame = () => console.log("Keluar game");

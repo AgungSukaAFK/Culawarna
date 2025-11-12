@@ -6,68 +6,24 @@ import React, {
   useEffect,
   useReducer,
 } from "react";
+// Impor semua tipe dari file baru
+import {
+  GameAction,
+  GameContextProps,
+  GameState,
+  QuizAttempt,
+} from "@/app/types/gameTypes";
 
-// --- 1. DEFINISI TIPE DATA (TYPESCRIPT) ---
-
-type CulaPhase = "Baby" | "Anak" | "Dewasa";
-
-interface Outfit {
-  bajuId: string | null;
-  topiId: string | null;
-  aksesorisId: string | null;
-}
-
-export interface FoodItem {
-  id: string;
-  name: string;
-  energyValue: number;
-  currentStacks: number;
-  maxStacks: number;
-  refillTimestamp: number;
-  cost: number;
-}
-
-interface GameState {
-  xp: number;
-  xpToNextLevel: number;
-  phase: CulaPhase;
-  koin: number;
-  energi: number;
-  maxEnergi: number;
-  currentOutfit: Outfit;
-  foodInventory: { [foodId: string]: FoodItem };
-  isLoading: boolean;
-}
-
-type GameAction =
-  | { type: "SET_LOADING"; payload: boolean }
-  | { type: "LOAD_STATE"; payload: Partial<GameState> } // Payload bisa parsial
-  | { type: "TAMBAH_XP"; payload: number }
-  | { type: "GUNAKAN_ENERGI"; payload: number }
-  | { type: "TAMBAH_ENERGI"; payload: number } // <-- Tombol debug baru
-  | { type: "TAMBAH_KOIN"; payload: number }
-  | { type: "KURANGI_KOIN"; payload: number }
-  | {
-      type: "GANTI_OUTFIT";
-      payload: { itemType: keyof Outfit; itemId: string };
-    }
-  | { type: "EVOLUSI"; payload: { newPhase: CulaPhase; nextLevelXp: number } }
-  | { type: "KONSUMSI_MAKANAN"; payload: { foodId: string } }
-  | { type: "BELI_MAKANAN"; payload: { foodId: string } }
-  | { type: "REFILL_MAKANAN"; payload: { foodId: string } };
-
-interface GameContextProps {
-  state: GameState;
-  dispatch: React.Dispatch<GameAction>;
-}
-
+// --- Konstanta ---
 const STORAGE_KEY = "@CulawarnaGame:SaveData";
 const REFILL_TIME_MS = 3 * 60 * 1000;
+const XP_PER_LEVEL = 10;
+const KUIS_ENERGY_COST = 25;
 
-// --- 2. STATE AWAL ---
+// --- STATE AWAL ---
 const initialState: GameState = {
-  xp: 5,
-  xpToNextLevel: 10,
+  xp: 0, // Mulai dari 0
+  xpToNextLevel: XP_PER_LEVEL,
   phase: "Baby",
   koin: 15,
   energi: 100,
@@ -97,33 +53,72 @@ const initialState: GameState = {
       cost: 3,
     },
   },
+  materiProgress: {
+    bab1: { unlocked: true, completedQuiz: false },
+    bab2: { unlocked: false, completedQuiz: false },
+    bab3: { unlocked: false, completedQuiz: false },
+    bab4: { unlocked: false, completedQuiz: false },
+  },
+  quizHistory: [],
+  lastQuizTimestamp: 0,
   isLoading: true,
 };
 
-// --- 3. REDUCER (Diperbarui) ---
+// --- REDUCER (Diperbarui) ---
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case "SET_LOADING":
       return { ...state, isLoading: action.payload };
 
-    // --- PERBAIKAN LOGIKA LOADING ---
     case "LOAD_STATE":
-      // Gabungkan state awal (default) dengan data yg dimuat (payload)
-      // dan pastikan isLoading: false
       return { ...initialState, ...action.payload, isLoading: false };
 
-    case "TAMBAH_XP":
-      const newXp = state.xp + action.payload;
+    case "TAMBAH_XP": {
+      let newXp = state.xp + action.payload;
+      let newPhase = state.phase;
+      let newProgress = state.materiProgress;
+
+      // Cek Naik Level / Evolusi
       if (newXp >= state.xpToNextLevel) {
-        console.log("NAIK LEVEL / EVOLUSI!");
-        return { ...state, xp: newXp - state.xpToNextLevel };
+        newXp = newXp - state.xpToNextLevel; // Reset XP
+        console.log("NAIK LEVEL!");
+
+        // Logika Evolusi
+        if (state.phase === "Baby") {
+          newPhase = "Anak";
+          newProgress = {
+            ...newProgress,
+            bab2: { ...newProgress.bab2, unlocked: true },
+          };
+          console.log("EVOLUSI KE ANAK!");
+        } else if (state.phase === "Anak") {
+          newPhase = "Remaja";
+          newProgress = {
+            ...newProgress,
+            bab3: { ...newProgress.bab3, unlocked: true },
+          };
+          console.log("EVOLUSI KE REMAJA!");
+        } else if (state.phase === "Remaja") {
+          newPhase = "Dewasa";
+          newProgress = {
+            ...newProgress,
+            bab4: { ...newProgress.bab4, unlocked: true },
+          };
+          console.log("EVOLUSI KE DEWASA!");
+        }
       }
-      return { ...state, xp: newXp };
+      return {
+        ...state,
+        xp: newXp,
+        phase: newPhase,
+        materiProgress: newProgress,
+      };
+    }
 
     case "GUNAKAN_ENERGI":
       return { ...state, energi: Math.max(0, state.energi - action.payload) };
 
-    case "TAMBAH_ENERGI": // <-- LOGIKA BARU
+    case "TAMBAH_ENERGI":
       return {
         ...state,
         energi: Math.min(state.maxEnergi, state.energi + action.payload),
@@ -145,6 +140,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
 
     case "KONSUMSI_MAKANAN": {
+      // ... (logika sama seperti sebelumnya)
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
       if (!item || item.currentStacks <= 0) return state;
@@ -159,6 +155,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     }
 
     case "BELI_MAKANAN": {
+      // ... (logika sama seperti sebelumnya)
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
       if (
@@ -178,6 +175,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     }
 
     case "REFILL_MAKANAN": {
+      // ... (logika sama seperti sebelumnya)
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
       const now = Date.now();
@@ -201,6 +199,46 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return state;
     }
 
+    // --- LOGIKA KUIS BARU ---
+    case "START_KUIS":
+      // Pengecekan energi & cooldown dilakukan di halaman kuis
+      // Di sini kita hanya potong energi & set timestamp
+      return {
+        ...state,
+        energi: Math.max(0, state.energi - KUIS_ENERGY_COST),
+        lastQuizTimestamp: Date.now(),
+      };
+
+    case "SUBMIT_KUIS": {
+      const { babId, score } = action.payload;
+      const newHistory: QuizAttempt = {
+        babId,
+        score,
+        total: XP_PER_LEVEL,
+        timestamp: Date.now(),
+        passed: score === XP_PER_LEVEL,
+      };
+
+      return {
+        ...state,
+        // Tambahkan XP
+        xp: state.xp + score,
+        // Tandai kuis sudah selesai
+        materiProgress: {
+          ...state.materiProgress,
+          [babId]: { ...state.materiProgress[babId], completedQuiz: true },
+        },
+        // Tambahkan ke riwayat
+        quizHistory: [...state.quizHistory, newHistory],
+      };
+    }
+
+    // Ini bisa dipanggil oleh TAMBAH_XP
+    case "EVOLVE_CULA": {
+      // (Logika ini sekarang ada di dalam TAMBAH_XP)
+      return state;
+    }
+
     default:
       return state;
   }
@@ -209,7 +247,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
 // --- 4. CREATE CONTEXT ---
 const GameContext = createContext<GameContextProps | undefined>(undefined);
 
-// --- 5. PROVIDER COMPONENT (Diperbarui) ---
+// --- 5. PROVIDER COMPONENT ---
 export const GameProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -220,8 +258,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
       try {
         const savedState = await AsyncStorage.getItem(STORAGE_KEY);
         if (savedState) {
-          // --- PERBAIKAN LOGIKA LOADING ---
-          // Langsung kirim data yg di-parse, jangan di-merge di sini
           dispatch({ type: "LOAD_STATE", payload: JSON.parse(savedState) });
         } else {
           dispatch({ type: "SET_LOADING", payload: false });

@@ -1,31 +1,41 @@
-import {
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Image,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
-// Impor Tipe dan Layout
+// Impor Tipe, Layout, dan Konteks
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
-import { useGameContext } from "@/app/context/GameContext";
-import { ModalLemariProps } from "./types/gameTypes";
+import { useGameContext } from "@/app/context/GameContext"; //
 
-// --- KOMPONEN MODAL SPESIFIK KAMAR ---
-const ModalLemari: React.FC<ModalLemariProps> = ({
+// --- INTERFACE LOKAL ---
+interface ModalDekorasiProps {
+  visible: boolean;
+  onClose: () => void;
+  onPasangDekorasi: (dekorId: string) => void;
+}
+
+// --- KOMPONEN MODAL SPESIFIK RUANG TAMU ---
+const ModalDekorasi: React.FC<ModalDekorasiProps> = ({
   visible,
   onClose,
-  onGantiBaju,
+  onPasangDekorasi,
 }) => {
+  // TODO: Ambil inventory dekorasi dari state
+  const ownedDekorasi = [
+    { id: "dekor-sofa-1", name: "Sofa Merah", icon: "couch" },
+    { id: "dekor-lampu-1", name: "Lampu Meja", icon: "lightbulb" },
+    { id: "dekor-lukisan-1", name: "Lukisan", icon: "image" },
+  ];
+
   return (
     <Modal
       visible={visible}
@@ -35,13 +45,25 @@ const ModalLemari: React.FC<ModalLemariProps> = ({
     >
       <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Lemari Baju</Text>
-          <View style={styles.lemariGrid}>
-            <TouchableOpacity style={styles.itemBaju} onPress={onGantiBaju}>
-              <FontAwesome5 name="tshirt" size={40} color="#4A2A00" />
-              <Text style={styles.itemBajuText}>Baju Acak</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.modalTitle}>Pilih Dekorasi</Text>
+          <ScrollView style={{ width: "100%" }}>
+            <View style={styles.dekorasiGrid}>
+              {ownedDekorasi.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.itemDekorasi}
+                  onPress={() => onPasangDekorasi(item.id)}
+                >
+                  <FontAwesome5
+                    name={item.icon as any}
+                    size={40}
+                    color="#4A2A00"
+                  />
+                  <Text style={styles.itemDekorasiText}>{item.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
           <TouchableOpacity
             style={[
               styles.modalButton,
@@ -59,54 +81,47 @@ const ModalLemari: React.FC<ModalLemariProps> = ({
   );
 };
 
-// --- LAYAR KAMAR ---
-export default function KamarScreen() {
+// --- LAYAR RUANG TAMU ---
+export default function RuangTamuScreen() {
   const router = useRouter();
-  const { state, dispatch } = useGameContext();
-  const [isLemariVisible, setLemariVisible] = useState<boolean>(false);
+  const { state } = useGameContext();
+  const [isDekorasiVisible, setDekorasiVisible] = useState<boolean>(false);
 
   // Handler spesifik halaman
-  const handleGantiBaju = () => {
-    const bajuBaru = `baju_${Math.floor(Math.random() * 10)}`;
-    dispatch({
-      type: "GANTI_OUTFIT",
-      payload: { itemType: "bajuId", itemId: bajuBaru },
-    });
-    setLemariVisible(false);
+  const handlePasangDekorasi = (dekorId: string) => {
+    console.log("Pasang dekorasi:", dekorId);
+    // TODO: dispatch aksi untuk mengubah state dekorasi
+    setDekorasiVisible(false);
   };
 
   return (
     <GameHUDLayout
-      // Latar belakang spesifik
-      backgroundImage={require("@/assets/images/kamar_bg.png")} //
+      // Latar belakang (ganti dengan aset 'ruangtamu_bg.png' jika sudah ada)
+      backgroundImage={require("@/assets/images/guest.png")} //
       // Tombol navigasi internal
-      onPressNavLeft={() => router.replace("/dapur")}
-      onPressNavRight={() => router.replace("/ruangTamu")}
+      onPressNavLeft={() => router.replace("/kamar")} // Ke Dapur
+      onPressNavRight={() => router.replace("/dapur")} // Ke Kamar
       // Tombol aksi tengah
       middleNavButton={{
-        onPress: () => setLemariVisible(true),
-        icon: (
-          <MaterialCommunityIcons name="tshirt-crew" size={24} color="white" />
-        ),
-        text: "Lemari",
+        onPress: () => setDekorasiVisible(true),
+        icon: <FontAwesome5 name="couch" size={24} color="white" />,
+        text: "Dekorasi",
       }}
       // Modal spesifik
       pageModal={
-        <ModalLemari
-          visible={isLemariVisible}
-          onClose={() => setLemariVisible(false)}
-          onGantiBaju={handleGantiBaju}
+        <ModalDekorasi
+          visible={isDekorasiVisible}
+          onClose={() => setDekorasiVisible(false)}
+          onPasangDekorasi={handlePasangDekorasi}
         />
       }
     >
       {/* Konten Halaman Ini */}
       <View style={styles.kontenArea}>
-        <Text style={styles.textPlaceholder}>
-          (Baju: {state.currentOutfit.bajuId || "Kosong"})
-        </Text>
+        <Text style={styles.textPlaceholder}>(Ini Ruang Tamu)</Text>
         <Image
           source={require("@/assets/images/cula_character.png")} //
-          style={styles.karakterKamar}
+          style={styles.karakter}
         />
       </View>
     </GameHUDLayout>
@@ -121,7 +136,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingBottom: 90,
   },
-  karakterKamar: {
+  karakter: {
     width: 300,
     height: 300,
     resizeMode: "contain",
@@ -178,21 +193,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#8A2BE2",
     borderColor: "#4B0082",
   },
-  // --- Style Modal Lemari ---
-  lemariGrid: {
+  // --- Style Modal Dekorasi (BARU) ---
+  dekorasiGrid: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    flexWrap: "wrap", // Agar bisa ke baris baru
+    justifyContent: "center", // Pusatkan item
     width: "100%",
   },
-  itemBaju: {
+  itemDekorasi: {
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#4A2A00",
+    width: "45%", // Buat jadi 2 kolom
+    margin: 5, // Beri jarak antar item
   },
-  itemBajuText: {
+  itemDekorasiText: {
     marginTop: 5,
     color: "#4A2A00",
     fontWeight: "bold",

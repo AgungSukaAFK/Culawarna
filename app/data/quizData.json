@@ -1,0 +1,80 @@
+{
+  "bab1": {
+    "id": "bab1",
+    "title": "BAB 1: Kelompok Sosial",
+    "questions": [
+      {
+        "type": "BENAR_SALAH",
+        "image": "placeholder.png",
+        "questionText": "Ini adalah contoh kelompok sosial primer. Benar atau Salah?",
+        "correctAnswer": true
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Paguyuban (Gemeinschaft) adalah kelompok sosial yang longgar. Benar atau Salah?",
+        "correctAnswer": false
+      },
+      { "type": "BENAR_SALAH", "questionText": "...", "correctAnswer": true },
+      { "type": "BENAR_SALAH", "questionText": "...", "correctAnswer": true },
+      { "type": "BENAR_SALAH", "questionText": "...", "correctAnswer": false },
+      {
+        "type": "ABCD",
+        "questionText": "Manakah di bawah ini yang merupakan ciri kelompok sosial?",
+        "options": [
+          "Memiliki struktur",
+          "Bersifat sementara",
+          "Tidak saling kenal",
+          "Tidak ada tujuan"
+        ],
+        "correctAnswer": "Memiliki struktur"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "...",
+        "options": ["A", "B", "C", "D"],
+        "correctAnswer": "A"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "...",
+        "options": ["A", "B", "C", "D"],
+        "correctAnswer": "B"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "...",
+        "options": ["A", "B", "C", "D"],
+        "correctAnswer": "C"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "...",
+        "options": ["A", "B", "C", "D"],
+        "correctAnswer": "D"
+      }
+    ]
+  },
+  "bab2": {
+    "id": "bab2",
+    "title": "BAB 2: Permasalahan Sosial",
+    "questions": [
+      { "type": "BENAR_SALAH", "questionText": "...", "correctAnswer": true },
+      {
+        "type": "ABCD",
+        "questionText": "...",
+        "options": ["A", "B", "C", "D"],
+        "correctAnswer": "A"
+      }
+    ]
+  },
+  "bab3": {
+    "id": "bab3",
+    "title": "BAB 3: Konflik Sosial",
+    "questions": []
+  },
+  "bab4": {
+    "id": "bab4",
+    "title": "BAB 4: Harmoni Sosial",
+    "questions": []
+  }
+}

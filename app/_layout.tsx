@@ -5,7 +5,7 @@ export default function RootLayout() {
   return (
     // 2. Bungkus <Stack> dengan <GameProvider>
     <GameProvider>
-      <Stack />
+      <Stack screenOptions={{ headerShown: false }} />
     </GameProvider>
   );
 }

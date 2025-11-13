@@ -1,3 +1,6 @@
+// Di dalam file: app/components/GameHUDLayout.tsx
+// (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
+
 import { useGameContext } from "@/app/context/GameContext";
 import {
   ModalNavigasiProps,
@@ -16,13 +19,15 @@ import {
   ImageSourcePropType,
   Modal,
   Platform,
-  SafeAreaView,
+  // Hapus SafeAreaView dari 'react-native'
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+// --- PERBAIKAN: Impor SafeAreaView dari context ---
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // --- KOMPONEN-KOMPONEN INTERNAL ---
 
@@ -51,7 +56,11 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+      <BlurView
+        intensity={10}
+        tint={Platform.OS === "web" ? "light" : "dark"}
+        style={styles.modalBackdrop}
+      >
         <View style={styles.modalContainer}>
           <ScrollView
             contentContainerStyle={{ alignItems: "center" }}
@@ -105,13 +114,16 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
                 <Text style={styles.modalButtonText}>Kembali</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.modalButton, styles.keluarButton]}
-                onPress={onExit}
-              >
-                <Ionicons name="home-outline" size={16} color="white" />
-                <Text style={styles.modalButtonText}>Homescreen</Text>
-              </TouchableOpacity>
+              {/* Sembunyikan tombol Keluar di Web */}
+              {Platform.OS !== "web" && (
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.keluarButton]}
+                  onPress={onExit}
+                >
+                  <Ionicons name="home-outline" size={16} color="white" />
+                  <Text style={styles.modalButtonText}>Homescreen</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </ScrollView>
         </View>
@@ -132,7 +144,11 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+      <BlurView
+        intensity={10}
+        tint={Platform.OS === "web" ? "light" : "dark"}
+        style={styles.modalBackdrop}
+      >
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Pergi ke...</Text>
 
@@ -177,17 +193,15 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
   );
 };
 
-// --- PROPS UNTUK LAYOUT ---
 interface GameHUDLayoutProps {
   children: ReactNode;
   backgroundImage: ImageSourcePropType;
-  middleNavButton: NavButtonProps; // Tombol aksi tengah yang unik
-  pageModal: ReactNode; // Modal unik untuk halaman itu
+  middleNavButton: NavButtonProps;
+  pageModal: ReactNode;
   onPressNavLeft: () => void;
   onPressNavRight: () => void;
 }
 
-// --- KOMPONEN LAYOUT UTAMA ---
 export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
   children,
   backgroundImage,
@@ -199,7 +213,6 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
   const router = useRouter();
   const { state, dispatch } = useGameContext();
 
-  // State lokal untuk modal HUD
   const [isPengaturanVisible, setPengaturanVisible] = useState<boolean>(false);
   const [isEnergiVisible, setEnergiVisible] = useState<boolean>(false);
   const [isNavigasiVisible, setNavigasiVisible] = useState<boolean>(false);
@@ -212,7 +225,9 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
   const handleNavigasiEksternal = (screen: string) => {
     setNavigasiVisible(false);
     console.log(`Navigasi ke: ${screen}`);
-    // router.push(`/${screen}`);
+    if (screen === "riwayat") {
+      router.push("/riwayat");
+    }
   };
 
   // Handler Debug
@@ -223,10 +238,8 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
   const handleDapatKoin = () => dispatch({ type: "TAMBAH_KOIN", payload: 5 });
   const handleDapatXP = () => dispatch({ type: "TAMBAH_XP", payload: 3 });
 
-  // Hitung persentase energi
   const energiPercentage = (state.energi / state.maxEnergi) * 100;
 
-  // Tampilkan loading jika state belum siap
   if (state.isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -238,7 +251,8 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
 
   return (
     <ImageBackground source={backgroundImage} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      {/* --- PERBAIKAN: Ganti ke SafeAreaView yang benar --- */}
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
         {/* ===== 1. HUD ATAS (Full-width) ===== */}
         <View style={styles.hudAtas}>
           <View style={styles.hudInfoKiri}>
@@ -278,10 +292,8 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
           </View>
         )}
 
-        {/* ===== 2. KONTEN HALAMAN (dari props.children) ===== */}
         {children}
 
-        {/* ===== 3. NAVIGASI INTERNAL (Tombol Gede) ===== */}
         <View style={styles.intraNavContainer}>
           <TouchableOpacity
             style={styles.intraNavButton}
@@ -297,14 +309,12 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* ===== 4. HUD BAWAH (Tombol Aksi dari Props) ===== */}
         <View style={styles.hudBawah}>
           <NavButton
             onPress={() => setNavigasiVisible(true)}
             icon={<Ionicons name="map" size={24} color="white" />}
             text="Navigasi"
           />
-          {/* Tombol Tengah Dinamis */}
           <NavButton
             onPress={middleNavButton.onPress}
             icon={middleNavButton.icon}
@@ -317,22 +327,19 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
           />
         </View>
 
-        {/* ===== 5. MODALS ===== */}
-        {/* Modal spesifik halaman (Lemari/Makanan) */}
         {pageModal}
 
-        {/* Modal HUD (Pengaturan & Navigasi) */}
         <ModalPengaturan
           visible={isPengaturanVisible}
           onClose={() => setPengaturanVisible(false)}
           onExit={handleExitToHome}
-          volume={state.volume} //
+          volume={state.volume}
           setVolume={(newVolume) => {
-            const resolvedVolume =
+            const value =
               typeof newVolume === "function"
-                ? newVolume(state.volume)
+                ? (newVolume as (prev: number) => number)(state.volume)
                 : newVolume;
-            dispatch({ type: "SET_VOLUME", payload: resolvedVolume });
+            dispatch({ type: "SET_VOLUME", payload: value });
           }}
           onGunakanEnergi={handleGunakanEnergi}
           onTambahEnergi={handleTambahEnergi}
@@ -353,10 +360,13 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // Perbaikan untuk Web: Pastikan gambar cover penuh
+    width: "100%",
+    height: "100%",
   },
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === "android" ? Constants.statusBarHeight : 0,
+    // Hapus paddingTop
   },
   loadingContainer: {
     flex: 1,
@@ -372,7 +382,13 @@ const styles = StyleSheet.create({
   // --- HUD Atas (Full-width) ---
   hudAtas: {
     position: "absolute",
-    top: Platform.OS === "android" ? Constants.statusBarHeight + 10 : 50,
+    // --- PERBAIKAN: Logika 'top' untuk Web ---
+    top:
+      Platform.OS === "web"
+        ? 10
+        : Platform.OS === "android"
+        ? Constants.statusBarHeight + 10
+        : 50,
     left: 20,
     right: 20,
     flexDirection: "row",
@@ -384,6 +400,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 20,
     elevation: 2,
+    // Perbaikan Web: Batasi lebar di layar besar
+    maxWidth: 800,
+    alignSelf: "center",
   },
   hudInfoKiri: {
     flex: 1,
@@ -414,7 +433,6 @@ const styles = StyleSheet.create({
     color: "black",
     marginLeft: 5,
   },
-  // --- Tombol Energi ---
   tombolEnergi: {
     backgroundColor: "#555",
     width: 40,
@@ -426,6 +444,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   energiFill: {
     backgroundColor: "#FFC107",
@@ -440,10 +459,15 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
   },
-  // --- Modal Energi ---
   energiModal: {
     position: "absolute",
-    top: (Platform.OS === "android" ? Constants.statusBarHeight + 10 : 50) + 70,
+    // --- PERBAIKAN: Logika 'top' untuk Web ---
+    top:
+      Platform.OS === "web"
+        ? 70
+        : Platform.OS === "android"
+        ? Constants.statusBarHeight + 70
+        : 110,
     alignSelf: "center",
     backgroundColor: "white",
     padding: 10,
@@ -464,9 +488,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     zIndex: 5,
+    // Perbaikan Web: Batasi lebar di layar besar
+    maxWidth: 800,
+    alignSelf: "center",
   },
   intraNavButton: {
     opacity: 0.7,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   // --- HUD Bawah ---
   hudBawah: {
@@ -482,6 +510,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 10,
+    // Perbaikan Web: Batasi lebar di layar besar
+    width: "100%",
+    maxWidth: 800,
+    alignSelf: "center",
   },
   navButton: {
     flexDirection: "column",
@@ -496,6 +528,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderBottomWidth: 4,
     borderColor: "#4B0082",
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   navButtonText: {
     color: "white",
@@ -539,7 +572,7 @@ const styles = StyleSheet.create({
   },
   modalButtonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around", // <-- Ganti ke space-around
     width: "100%",
     marginTop: 20,
   },
@@ -551,6 +584,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 4,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   modalButtonText: {
     color: "white",
@@ -581,6 +615,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     marginBottom: 10,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   navigasiModalText: {
     color: "#4A2A00",
@@ -611,5 +646,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderColor: "#CCC",
     borderWidth: 1,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
 });

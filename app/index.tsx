@@ -1,9 +1,10 @@
 // Di dalam file: app/index.tsx
-// (GANTI SELURUH FILE ANDA DENGAN INI)
+// (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
 
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { BlurView } from "expo-blur";
+// Hapus Constants, kita tidak pakai statusBarHeight lagi
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
@@ -21,9 +22,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+// --- PERBAIKAN: Impor SafeAreaView dari context ---
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// --- PERBAIKAN: Impor GameContext ---
 import { useGameContext } from "./context/GameContext";
 
 // --- Komponen Modal Info (Tetap sama) ---
@@ -36,10 +36,10 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
     require("@/assets/profiles/aratifa.png"),
     require("@/assets/profiles/haura.png"),
     require("@/assets/profiles/maryani.png"),
-    require("@/assets/profiles/umam.png"),
     require("@/assets/profiles/naufal.png"),
+    require("@/assets/profiles/umam.png"),
   ];
-  const NAMA_GRUP_INSTAGRAM = "mammoours";
+  const NAMA_GRUP_INSTAGRAM = "culawarna.sis";
 
   const handleGroupInstaPress = () => {
     Linking.openURL(`https://instagram.com/${NAMA_GRUP_INSTAGRAM}`);
@@ -52,7 +52,11 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+      <BlurView
+        intensity={10}
+        tint={Platform.OS === "web" ? "light" : "dark"}
+        style={styles.modalBackdrop}
+      >
         <View style={styles.modalContainer}>
           <ScrollView
             style={{ width: "100%" }}
@@ -60,13 +64,10 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
           >
             <Text style={styles.modalTitle}>Tentang Culawarna</Text>
             <Text style={styles.aboutText}>
-              Culawarna adalah game edukasi{" "}
-              <Text style={{ fontStyle: "italic", fontWeight: "bold" }}>
-                virtual pet
-              </Text>{" "}
-              untuk mempelajari konsep-konsep dasar Sosiologi.
+              **Culawarna** adalah game edukasi *virtual pet* untuk mempelajari
+              konsep-konsep dasar **Sosiologi**.
               {"\n\n"}
-              Pelihara Si Cula, bantu dia belajar dengan menjawab kuis
+              Pelihara **Si Cula**, bantu dia belajar dengan menjawab kuis
               Sosiologi, dan saksikan dia berevolusi! Aplikasi ini mengambil
               tema Budaya Banten sebagai latar cerita visualnya.
             </Text>
@@ -106,12 +107,10 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
 
 // --- KOMPONEN HOMESCREEN ---
 export default function HomeScreen() {
-  // --- PERBAIKAN: Gunakan GameContext ---
   const { state, dispatch } = useGameContext();
 
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-  // const [volume, setVolume] = useState(0.5); // <-- HAPUS STATE LOKAL INI
 
   const handlePlayPress = () => {
     console.log("Mulai Main!");
@@ -120,7 +119,10 @@ export default function HomeScreen() {
 
   const handleInfoPress = () => setIsInfoModalVisible(true);
   const handleSettingsPress = () => setSettingsModalVisible(true);
-  const handleExitGame = () => BackHandler.exitApp();
+
+  const handleExitGame = () => {
+    BackHandler.exitApp();
+  };
 
   return (
     <ImageBackground
@@ -130,8 +132,8 @@ export default function HomeScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="auto" />
 
+      {/* --- PERBAIKAN: Ganti ke SafeAreaView yang benar --- */}
       <SafeAreaView style={styles.container} edges={["top"]}>
-        {/* ... (Zona Langit, Laut, Pasir tetap sama) */}
         {/* ZONA 1: LANGIT (Judul & Ikon) */}
         <View style={styles.skyZone}>
           <TouchableOpacity
@@ -189,20 +191,23 @@ export default function HomeScreen() {
         animationType="fade"
         onRequestClose={() => setSettingsModalVisible(false)}
       >
-        <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+        <BlurView
+          intensity={10}
+          tint={Platform.OS === "web" ? "light" : "dark"}
+          style={styles.modalBackdrop}
+        >
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Pengaturan</Text>
 
             <Text style={styles.sliderLabel}>Volume musik</Text>
-            {/* --- PERBAIKAN: Hubungkan Slider ke Context --- */}
             <Slider
               style={styles.slider}
               minimumValue={0}
               maximumValue={1}
-              value={state.volume} // <-- Gunakan state.volume
+              value={state.volume}
               onValueChange={(newVolume) =>
                 dispatch({ type: "SET_VOLUME", payload: newVolume })
-              } // <-- Gunakan dispatch
+              }
               minimumTrackTintColor="#4B0082"
               maximumTrackTintColor="#D3D3D3"
               thumbTintColor="#4B0082"
@@ -216,13 +221,17 @@ export default function HomeScreen() {
                 <Ionicons name="arrow-back" size={16} color="white" />
                 <Text style={styles.modalButtonText}>Kembali</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.keluarButton]}
-                onPress={handleExitGame}
-              >
-                <Ionicons name="exit-outline" size={16} color="white" />
-                <Text style={styles.modalButtonText}>Keluar</Text>
-              </TouchableOpacity>
+
+              {/* Sembunyikan tombol Keluar di Web */}
+              {Platform.OS !== "web" && (
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.keluarButton]}
+                  onPress={handleExitGame}
+                >
+                  <Ionicons name="exit-outline" size={16} color="white" />
+                  <Text style={styles.modalButtonText}>Keluar</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </BlurView>
@@ -231,19 +240,23 @@ export default function HomeScreen() {
   );
 }
 
-// STYLESHEET (Tetap sama seperti sebelumnya)
+// STYLESHEET
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    // Perbaikan untuk Web: Pastikan gambar cover penuh
+    width: "100%",
+    height: "100%",
   },
   container: {
     flex: 1,
+    // Hapus paddingTop, SafeAreaView yg mengatur
   },
   skyZone: {
     flex: 3,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: Platform.OS === "android" ? 0 : 30,
+    paddingTop: Platform.OS === "web" ? 30 : 0,
   },
   seaZone: {
     flex: 2,
@@ -255,7 +268,9 @@ const styles = StyleSheet.create({
   },
   titleImage: {
     width: "80%",
+    maxWidth: 400, // <-- Tambahkan maxWidth untuk web
     height: "60%",
+    minHeight: 100, // <-- Tambahkan minHeight untuk web
   },
   playButton: {
     width: 80,
@@ -266,6 +281,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.5)",
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   playIcon: {
     marginLeft: 5,
@@ -276,10 +292,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "50%",
     height: "90%",
+    maxWidth: 300, // <-- Tambahkan maxWidth untuk web
+    maxHeight: 400, // <-- Tambahkan maxHeight untuk web
   },
   gameButton: {
     position: "absolute",
-    top: 15,
+    top: Platform.OS === "web" ? 20 : 15,
     zIndex: 10,
     width: 50,
     height: 50,
@@ -289,6 +307,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(120, 80, 220, 0.85)",
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.5)",
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   infoButton: {
     left: 15,
@@ -296,8 +315,6 @@ const styles = StyleSheet.create({
   settingsButton: {
     right: 15,
   },
-
-  // --- STYLE MODAL ---
   modalBackdrop: {
     flex: 1,
     justifyContent: "center",
@@ -332,7 +349,7 @@ const styles = StyleSheet.create({
   },
   modalButtonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     width: "100%",
   },
   modalButton: {
@@ -343,6 +360,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 4,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   modalButtonText: {
     color: "white",
@@ -358,8 +376,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#DC143C",
     borderColor: "#8B0000",
   },
-
-  // --- STYLE MODAL INFO BARU ---
   aboutText: {
     fontSize: 15,
     color: "#4A2A00",
@@ -397,6 +413,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     elevation: 3,
     marginTop: 10,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   groupInstaText: {
     marginLeft: 10,

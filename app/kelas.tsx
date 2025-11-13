@@ -1,7 +1,10 @@
+// Di dalam file: app/kelas.tsx
+// (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
+
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { BlurView } from "expo-blur";
-import Constants from "expo-constants";
+// Hapus Constants
 import { Stack, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -9,13 +12,15 @@ import {
   ImageBackground,
   Modal,
   Platform,
-  SafeAreaView,
+  // Hapus SafeAreaView
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+// --- PERBAIKAN: Impor SafeAreaView dari context ---
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useGameContext } from "@/app/context/GameContext";
 import {
@@ -24,7 +29,7 @@ import {
   NavButtonProps,
 } from "@/app/types/gameTypes";
 
-// --- INTERFACE LOKAL ---
+// --- INTERFACE LOKAL (Sudah benar) ---
 interface ModalMateriProps {
   visible: boolean;
   onClose: () => void;
@@ -67,7 +72,12 @@ const ModalMateri: React.FC<ModalMateriProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+      {/* PERBAIKAN: Tambahkan cek Platform.OS untuk BlurView */}
+      <BlurView
+        intensity={10}
+        tint={Platform.OS === "web" ? "light" : "dark"}
+        style={styles.modalBackdrop}
+      >
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Materi Belajar</Text>
           <ScrollView style={{ width: "100%" }}>
@@ -132,7 +142,11 @@ const ModalKuis: React.FC<ModalKuisProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+      <BlurView
+        intensity={10}
+        tint={Platform.OS === "web" ? "light" : "dark"}
+        style={styles.modalBackdrop}
+      >
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Koleksi Kuis</Text>
           <ScrollView style={{ width: "100%" }}>
@@ -203,7 +217,11 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+      <BlurView
+        intensity={10}
+        tint={Platform.OS === "web" ? "light" : "dark"}
+        style={styles.modalBackdrop}
+      >
         <View style={styles.modalContainer}>
           <ScrollView
             contentContainerStyle={{ alignItems: "center" }}
@@ -216,7 +234,7 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
               minimumValue={0}
               maximumValue={1}
               value={volume}
-              onValueChange={setVolume}
+              onValueChange={setVolume} // <-- Ini sudah benar, akan dihubungkan ke dispatch
               minimumTrackTintColor="#4B0082"
               maximumTrackTintColor="#D3D3D3"
               thumbTintColor="#4B0082"
@@ -253,13 +271,16 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
                 <Ionicons name="arrow-back" size={16} color="white" />
                 <Text style={styles.modalButtonText}>Kembali</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.keluarButton]}
-                onPress={onExit}
-              >
-                <Ionicons name="home-outline" size={16} color="white" />
-                <Text style={styles.modalButtonText}>Homescreen</Text>
-              </TouchableOpacity>
+              {/* Sembunyikan tombol Keluar di Web */}
+              {Platform.OS !== "web" && (
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.keluarButton]}
+                  onPress={onExit}
+                >
+                  <Ionicons name="home-outline" size={16} color="white" />
+                  <Text style={styles.modalButtonText}>Homescreen</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </ScrollView>
         </View>
@@ -281,7 +302,11 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+      <BlurView
+        intensity={10}
+        tint={Platform.OS === "web" ? "light" : "dark"}
+        style={styles.modalBackdrop}
+      >
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Pergi ke...</Text>
           <View style={styles.navigasiGrid}>
@@ -327,14 +352,14 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
 // --- LAYAR KELAS BUDAYA ---
 export default function KelasBudayaScreen() {
   const router = useRouter();
-  const { state, dispatch } = useGameContext();
+  const { state, dispatch } = useGameContext(); // <-- Dapatkan state & dispatch
 
   const [isMateriVisible, setMateriVisible] = useState(false);
   const [isKuisVisible, setKuisVisible] = useState(false);
   const [isPengaturanVisible, setPengaturanVisible] = useState(false);
   const [isEnergiVisible, setEnergiVisible] = useState(false);
   const [isNavigasiVisible, setNavigasiVisible] = useState(false);
-  const [volume, setVolume] = useState(0.5);
+  // const [volume, setVolume] = useState(0.5); // <-- HAPUS STATE LOKAL INI
 
   const handleExitToHome = () => {
     setPengaturanVisible(false);
@@ -351,20 +376,11 @@ export default function KelasBudayaScreen() {
 
   const handleSelectMateri = (babId: string) => {
     setMateriVisible(false);
-
-    // --- PERUBAHAN DI SINI ---
-    // Logika lama:
-    // // TODO: Buka PDF viewer
-    // console.log(`Buka PDF untuk ${babId}`);
-
-    // Logika baru: Navigasi ke layar materi
     router.push({ pathname: "/materi/[bab]", params: { bab: babId } });
-    // --- AKHIR PERUBAHAN ---
   };
 
   const handleSelectKuis = (babId: string) => {
     setKuisVisible(false);
-    // Cek energi & cooldown sebelum pindah halaman
     const KUIS_ENERGY_COST = 25;
     const KUIS_COOLDOWN_MS = 30 * 1000;
 
@@ -383,7 +399,6 @@ export default function KelasBudayaScreen() {
       return;
     }
 
-    // Navigasi ke halaman kuis dinamis (pakai objek pathname + params untuk typing yang benar)
     router.push({ pathname: "/kuis/[bab]", params: { bab: babId } });
   };
 
@@ -406,12 +421,12 @@ export default function KelasBudayaScreen() {
   }
 
   return (
-    // Ganti dengan background kelas budaya
     <ImageBackground
       source={require("@/assets/images/kelas_bg.png")}
       style={styles.container}
     >
-      <SafeAreaView style={styles.safeArea}>
+      {/* --- PERBAIKAN: Ganti ke SafeAreaView yang benar --- */}
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <Stack.Screen options={{ headerShown: false }} />
 
         {/* ===== 1. HUD ATAS ===== */}
@@ -454,7 +469,6 @@ export default function KelasBudayaScreen() {
 
         {/* ===== 2. KONTEN KELAS BUDAYA ===== */}
         <View style={styles.kontenArea}>
-          {/* Ini adalah tombol menu utama di halaman ini */}
           <TouchableOpacity
             style={styles.menuUtamaButton}
             onPress={() => setMateriVisible(true)}
@@ -489,7 +503,6 @@ export default function KelasBudayaScreen() {
             icon={<Ionicons name="map" size={24} color="white" />}
             text="Navigasi"
           />
-          {/* Tombol tengah "Aksi" bisa dinonaktifkan atau diganti */}
           <View style={styles.navButtonDisabled}>
             <Ionicons name="book" size={24} color="#AAA" />
             <Text style={styles.navButtonTextDisabled}>Belajar</Text>
@@ -512,12 +525,21 @@ export default function KelasBudayaScreen() {
           onClose={() => setKuisVisible(false)}
           onSelectKuis={handleSelectKuis}
         />
+        {/* --- PERBAIKAN: Hubungkan Slider ke Context --- */}
         <ModalPengaturan
           visible={isPengaturanVisible}
           onClose={() => setPengaturanVisible(false)}
           onExit={handleExitToHome}
-          volume={volume}
-          setVolume={setVolume}
+          volume={state.volume} // <-- Gunakan state.volume
+          setVolume={(newVolume) =>
+            dispatch({
+              type: "SET_VOLUME",
+              payload:
+                typeof newVolume === "function"
+                  ? (newVolume as (prev: number) => number)(state.volume)
+                  : newVolume,
+            })
+          } // <-- Gunakan dispatch
           onGunakanEnergi={handleGunakanEnergi}
           onTambahEnergi={handleTambahEnergi}
           onDapatKoin={handleDapatKoin}
@@ -533,11 +555,15 @@ export default function KelasBudayaScreen() {
   );
 }
 
-// --- STYLESHEET (Banyak style disalin dari kamar.tsx) ---
+// --- STYLESHEET ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === "android" ? Constants.statusBarHeight : 0,
+    // --- PERBAIKAN: Hapus paddingTop ---
+    // paddingTop: Platform.OS === "android" ? Constants.statusBarHeight : 0,
+    // Perbaikan untuk Web: Pastikan gambar cover penuh
+    width: "100%",
+    height: "100%",
   },
   safeArea: {
     flex: 1,
@@ -551,7 +577,8 @@ const styles = StyleSheet.create({
   // --- HUD Atas ---
   hudAtas: {
     position: "absolute",
-    top: Platform.OS === "android" ? Constants.statusBarHeight + 10 : 50,
+    // --- PERBAIKAN: Logika 'top' untuk Web ---
+    top: Platform.OS === "web" ? 10 : 50, // Disederhanakan, 50 untuk native
     left: 20,
     right: 20,
     flexDirection: "row",
@@ -563,6 +590,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 20,
     elevation: 2,
+    // Perbaikan Web: Batasi lebar di layar besar
+    maxWidth: 800,
+    alignSelf: "center",
   },
   hudInfoKiri: { flex: 1, alignItems: "flex-start" },
   hudInfoTengah: { flex: 1, alignItems: "center" },
@@ -586,6 +616,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   energiFill: {
     backgroundColor: "#FFC107",
@@ -602,7 +633,8 @@ const styles = StyleSheet.create({
   },
   energiModal: {
     position: "absolute",
-    top: (Platform.OS === "android" ? Constants.statusBarHeight + 10 : 50) + 70,
+    // --- PERBAIKAN: Logika 'top' untuk Web ---
+    top: Platform.OS === "web" ? 70 : 110, // Disederhanakan, 110 untuk native
     alignSelf: "center",
     backgroundColor: "white",
     padding: 10,
@@ -625,8 +657,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     width: "70%",
+    maxWidth: 300, // <-- Tambahkan maxWidth untuk web
     alignItems: "center",
     marginVertical: 10,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   menuUtamaText: {
     fontSize: 20,
@@ -644,9 +678,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-start", // Hanya tombol kembali
     zIndex: 5,
+    // Perbaikan Web: Batasi lebar di layar besar
+    maxWidth: 800,
+    alignSelf: "center",
   },
   intraNavButton: {
     opacity: 0.7,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
 
   // --- HUD Bawah ---
@@ -663,6 +701,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 10,
+    // Perbaikan Web: Batasi lebar di layar besar
+    width: "100%",
+    maxWidth: 800,
+    alignSelf: "center",
   },
   navButton: {
     flexDirection: "column",
@@ -677,6 +719,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderBottomWidth: 4,
     borderColor: "#4B0082",
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   navButtonText: {
     color: "white",
@@ -740,7 +783,7 @@ const styles = StyleSheet.create({
   },
   modalButtonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around", // <-- Ganti ke space-around
     width: "100%",
     marginTop: 20,
   },
@@ -752,6 +795,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 4,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   modalButtonText: {
     color: "white",
@@ -783,6 +827,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     marginBottom: 10,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   navigasiModalText: {
     color: "#4A2A00",
@@ -821,5 +866,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderColor: "#CCC",
     borderWidth: 1,
+    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
 });

@@ -1,14 +1,16 @@
 // Nama file: app/materi/[bab].tsx
-// (KODE LENGKAP UNTUK SOLUSI EXPO GO / SHARING)
+// (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
 
 import { Ionicons } from "@expo/vector-icons";
 import { Asset } from "expo-asset";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import * as Sharing from "expo-sharing"; // <-- Hanya gunakan ini
+import * as Sharing from "expo-sharing";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform, // <-- 1. Impor Platform
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -35,7 +37,7 @@ const materiMap: { [key: string]: { title: string } } = {
 export default function MateriScreen() {
   const router = useRouter();
   const { bab } = useLocalSearchParams<{ bab: string }>();
-  const [isLoading, setIsLoading] = useState(false); // Hanya untuk tombol
+  const [isLoading, setIsLoading] = useState(false);
 
   const materi = bab ? materiMap[bab] : null;
   const babKey = bab as keyof typeof pdfAssets;
@@ -45,29 +47,34 @@ export default function MateriScreen() {
 
     setIsLoading(true);
     try {
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert(
-          "Error",
-          "Fitur 'sharing' tidak tersedia di perangkat ini."
-        );
-        setIsLoading(false);
-        return;
-      }
-
       const pdfModule = pdfAssets[babKey];
       const asset = Asset.fromModule(pdfModule);
       if (!asset.downloaded) {
         await asset.downloadAsync();
       }
 
-      if (asset.localUri) {
-        // Buka dialog "Buka dengan..."
-        await Sharing.shareAsync(asset.localUri, {
-          mimeType: "application/pdf",
-          dialogTitle: materi.title,
-        });
+      if (Platform.OS === "web") {
+        // --- LOGIKA UNTUK WEB ---
+        // 'asset.uri' di web adalah path publik. Buka di tab baru.
+        Linking.openURL(asset.uri);
       } else {
-        throw new Error("Gagal mendapatkan URI lokal dari aset PDF.");
+        // --- LOGIKA UNTUK NATIVE (ANDROID/IOS) ---
+        if (!(await Sharing.isAvailableAsync())) {
+          Alert.alert(
+            "Error",
+            "Fitur 'sharing' tidak tersedia di perangkat ini."
+          );
+          setIsLoading(false);
+          return;
+        }
+        if (asset.localUri) {
+          await Sharing.shareAsync(asset.localUri, {
+            mimeType: "application/pdf",
+            dialogTitle: materi.title,
+          });
+        } else {
+          throw new Error("Gagal mendapatkan URI lokal dari aset PDF.");
+        }
       }
     } catch (error: any) {
       console.error("Error membuka PDF:", error);
@@ -92,8 +99,9 @@ export default function MateriScreen() {
         <View style={styles.placeholderContainer}>
           <Ionicons name="document-text-outline" size={100} color="#CCC" />
           <Text style={styles.placeholderText}>
-            Materi akan dibuka menggunakan aplikasi PDF viewer di perangkat
-            Anda.
+            {Platform.OS === "web"
+              ? "Materi akan dibuka di tab browser baru."
+              : "Materi akan dibuka menggunakan aplikasi PDF viewer di perangkat Anda."}
           </Text>
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}

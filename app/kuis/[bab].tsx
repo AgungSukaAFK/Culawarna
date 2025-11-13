@@ -1,22 +1,23 @@
+// Di dalam file: app/kuis/[bab].tsx
+// (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
+
 import { useGameContext } from "@/app/context/GameContext";
-import { QuizQuestion } from "@/app/types/gameTypes";
+import AllQuizData from "@/app/data/quizData.json";
+import { CulaPhase, QuizQuestion } from "@/app/types/gameTypes"; // <-- Impor CulaPhase
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Platform,
-  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Impor data kuis JSON
-import AllQuizData from "@/app/data/quizData.json";
-import Constants from "expo-constants";
-import { ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Answer = string | boolean | null;
 
@@ -34,35 +35,40 @@ export default function KuisScreen() {
   useEffect(() => {
     if (bab && AllQuizData[bab]) {
       const babQuestions = AllQuizData[bab].questions as QuizQuestion[];
+      if (babQuestions.length === 0) {
+        Alert.alert("Segera Hadir", "Kuis untuk bab ini belum tersedia.", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+        return;
+      }
+
       setQuestions(babQuestions);
       setAnswers(new Array(babQuestions.length).fill(null));
 
-      // Kurangi energi & set cooldown
       dispatch({ type: "START_KUIS" });
-      setQuizStarted(true); // Tandai kuis sudah dimulai
+      setQuizStarted(true);
     } else {
-      Alert.alert("Error", "Bab kuis tidak ditemukan.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      if (!bab) {
+        Alert.alert("Error", "Bab kuis tidak ditemukan (ID Bab kosong).", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      }
     }
   }, [bab]);
 
   // 2. Tangani jika user keluar di tengah kuis
   useEffect(() => {
+    if (Platform.OS === "web") return;
+
     interface NavigationEvent {
       preventDefault: () => void;
-      // add optional fields if needed in the future
       [key: string]: unknown;
     }
-
     type RouterCallback = (e: NavigationEvent) => void;
 
     const listener: RouterCallback = (e) => {
-      // Peringatkan user jika kuis sudah dimulai dan mereka mencoba kembali
       if (!quizStarted) return;
-
-      e.preventDefault(); // Mencegah aksi default (keluar)
-
+      e.preventDefault();
       Alert.alert(
         "Keluar Kuis?",
         "Energi akan tetap terpotong dan progres kuis ini akan hilang. Anda yakin?",
@@ -72,16 +78,14 @@ export default function KuisScreen() {
             text: "Ya, Keluar",
             style: "destructive",
             onPress: () => {
-              setQuizStarted(false); // Matikan penjaga
-              router.back(); // Keluar
+              setQuizStarted(false);
+              router.back();
             },
           },
         ]
       );
     };
 
-    // Use the 'beforeRemove' listener and unsubscribe on cleanup.
-    // cast to any to avoid strict typing issues with different router implementations
     const unsubscribe = (router as any).addListener?.("beforeRemove", listener);
 
     return () => {
@@ -90,28 +94,32 @@ export default function KuisScreen() {
   }, [router, quizStarted]);
 
   // --- HANDLER NAVIGASI KUIS ---
-
   const handleSelectAnswer = (answer: Answer) => {
     setSelectedAnswer(answer);
   };
 
   const handleNextQuestion = () => {
-    // Simpan jawaban
     const newAnswers = [...answers];
     newAnswers[currentQuestionIndex] = selectedAnswer;
     setAnswers(newAnswers);
 
-    // Pindah ke pertanyaan berikutnya
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setSelectedAnswer(null); // Reset pilihan
+      setSelectedAnswer(null);
     } else {
-      // Kuis Selesai, hitung skor
       handleSubmitKuis(newAnswers);
     }
   };
 
   const handleSubmitKuis = (finalAnswers: Answer[]) => {
+    // Guard clause (Sudah benar)
+    if (typeof bab !== "string" || !AllQuizData[bab]) {
+      Alert.alert("Error Kritis", "Gagal menyimpan kuis: ID Bab tidak valid.", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+      return;
+    }
+
     let score = 0;
     questions.forEach((q, index) => {
       if (finalAnswers[index] === q.correctAnswer) {
@@ -122,16 +130,36 @@ export default function KuisScreen() {
     // Kirim hasil ke Context
     dispatch({ type: "SUBMIT_KUIS", payload: { babId: bab, score } });
 
-    // Tampilkan hasil
+    // --- PERBAIKAN DI SINI: Definisikan objek yang hilang ---
+    const babPhaseMap: { [key: string]: CulaPhase } = {
+      bab1: "Baby",
+      bab2: "Anak",
+      bab3: "Remaja",
+      bab4: "Dewasa",
+    };
+    const phaseOrder: { [key in CulaPhase]: number } = {
+      Baby: 1,
+      Anak: 2,
+      Remaja: 3,
+      Dewasa: 4,
+    };
+    // --- AKHIR PERBAIKAN ---
+
+    // Perjelas pesan XP
+    const intendedPhase = babPhaseMap[bab];
+    const playerPhase = state.phase;
+    const xpGained =
+      phaseOrder[playerPhase] > phaseOrder[intendedPhase] ? 0 : score;
+
     Alert.alert(
       "Kuis Selesai!",
-      `Skor Anda: ${score} / ${questions.length}\nAnda mendapat ${score} XP!`,
+      `Skor Anda: ${score} / ${questions.length}\nAnda mendapat ${xpGained} XP!`,
       [
         {
           text: "OK",
           onPress: () => {
-            setQuizStarted(false); // Matikan penjaga
-            router.back(); // Kembali ke halaman kelas
+            setQuizStarted(false);
+            router.back();
           },
         },
       ]
@@ -139,15 +167,16 @@ export default function KuisScreen() {
   };
 
   // --- RENDER ---
-
   if (questions.length === 0) {
-    return <ActivityIndicator style={{ flex: 1 }} />;
+    return bab ? (
+      <ActivityIndicator style={{ flex: 1, backgroundColor: "#E6F4FE" }} />
+    ) : null;
   }
 
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.quizHeader}>
         <Text style={styles.headerText}>Kuis {AllQuizData[bab].title}</Text>
@@ -156,82 +185,92 @@ export default function KuisScreen() {
         </Text>
       </View>
 
-      <View style={styles.questionContainer}>
-        {/* Tampilkan gambar jika ada (untuk B/S) */}
-        {currentQuestion.image && (
-          <Image
-            source={require("@/assets/images/cula_character.png")} // GANTI DENGAN GAMBAR SOAL
-            style={styles.questionImage}
-          />
-        )}
-        <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
-      </View>
-
-      <View style={styles.optionsContainer}>
-        {currentQuestion.type === "BENAR_SALAH" && (
-          <>
-            <TouchableOpacity
-              style={[
-                styles.optionButton,
-                selectedAnswer === true && styles.optionSelected,
-              ]}
-              onPress={() => handleSelectAnswer(true)}
-            >
-              <Text style={styles.optionText}>Benar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.optionButton,
-                selectedAnswer === false && styles.optionSelected,
-              ]}
-              onPress={() => handleSelectAnswer(false)}
-            >
-              <Text style={styles.optionText}>Salah</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {currentQuestion.type === "ABCD" &&
-          currentQuestion.options?.map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={[
-                styles.optionButton,
-                selectedAnswer === option && styles.optionSelected,
-              ]}
-              onPress={() => handleSelectAnswer(option)}
-            >
-              <Text style={styles.optionText}>{option}</Text>
-            </TouchableOpacity>
-          ))}
-      </View>
-
-      <TouchableOpacity
-        style={[
-          styles.nextButton,
-          selectedAnswer === null && styles.disabledButton,
-        ]}
-        onPress={handleNextQuestion}
-        disabled={selectedAnswer === null}
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.nextButtonText}>
-          {currentQuestionIndex === questions.length - 1 ? "Selesai" : "Lanjut"}
-        </Text>
-      </TouchableOpacity>
+        <View style={styles.questionContainer}>
+          {currentQuestion.image && (
+            <Image
+              source={require("@/assets/images/cula_character.png")}
+              style={styles.questionImage}
+            />
+          )}
+          <Text style={styles.questionText}>
+            {currentQuestion.questionText}
+          </Text>
+        </View>
+
+        <View style={styles.optionsContainer}>
+          {currentQuestion.type === "BENAR_SALAH" && (
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  selectedAnswer === true && styles.optionSelected,
+                ]}
+                onPress={() => handleSelectAnswer(true)}
+              >
+                <Text style={styles.optionText}>Benar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  selectedAnswer === false && styles.optionSelected,
+                ]}
+                onPress={() => handleSelectAnswer(false)}
+              >
+                <Text style={styles.optionText}>Salah</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {currentQuestion.type === "ABCD" &&
+            currentQuestion.options?.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.optionButton,
+                  selectedAnswer === option && styles.optionSelected,
+                ]}
+                onPress={() => handleSelectAnswer(option)}
+              >
+                <Text style={styles.optionText}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+        </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[
+            styles.nextButton,
+            selectedAnswer === null && styles.disabledButton,
+          ]}
+          onPress={handleNextQuestion}
+          disabled={selectedAnswer === null}
+        >
+          <Text style={styles.nextButtonText}>
+            {currentQuestionIndex === questions.length - 1
+              ? "Selesai"
+              : "Lanjut"}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
+// --- STYLES (Tidak berubah) ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E6F4FE", // Biru muda
-    padding: 20,
-    paddingTop:
-      (Platform.OS === "android" ? Constants.statusBarHeight : 0) + 20,
+    backgroundColor: "#E6F4FE",
   },
   quizHeader: {
-    marginBottom: 20,
+    padding: 20,
+    paddingTop: Platform.OS === "web" ? 20 : 0,
+    paddingBottom: 10,
   },
   headerText: {
     fontSize: 22,
@@ -239,14 +278,21 @@ const styles = StyleSheet.create({
     color: "#003366",
     textAlign: "center",
   },
-  questionContainer: {
+  scrollContainer: {
     flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: 10,
+  },
+  questionContainer: {
     backgroundColor: "white",
     borderRadius: 15,
     padding: 20,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
+    minHeight: 150,
   },
   questionImage: {
     width: 150,
@@ -260,7 +306,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   optionsContainer: {
-    flex: 1,
     justifyContent: "center",
   },
   optionButton: {
@@ -270,15 +315,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 2,
     borderColor: "#8A2BE2",
+    cursor: "pointer",
   },
   optionSelected: {
-    backgroundColor: "#D8BFD8", // Ungu muda
+    backgroundColor: "#D8BFD8",
     borderColor: "#4B0082",
   },
   optionText: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
+  },
+  footer: {
+    padding: 20,
+    paddingTop: 10,
   },
   nextButton: {
     backgroundColor: "#8A2BE2",
@@ -287,6 +337,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 4,
     borderColor: "#4B0082",
+    cursor: "pointer",
   },
   nextButtonText: {
     color: "white",

@@ -351,8 +351,15 @@ export default function KelasBudayaScreen() {
 
   const handleSelectMateri = (babId: string) => {
     setMateriVisible(false);
-    // TODO: Buka PDF viewer
-    console.log(`Buka PDF untuk ${babId}`);
+
+    // --- PERUBAHAN DI SINI ---
+    // Logika lama:
+    // // TODO: Buka PDF viewer
+    // console.log(`Buka PDF untuk ${babId}`);
+
+    // Logika baru: Navigasi ke layar materi
+    router.push({ pathname: "/materi/[bab]", params: { bab: babId } });
+    // --- AKHIR PERUBAHAN ---
   };
 
   const handleSelectKuis = (babId: string) => {

@@ -1,3 +1,6 @@
+// Nama file: app/context/GameContext.tsx
+// (GANTI SELURUH FILE ANDA DENGAN INI)
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
@@ -8,6 +11,7 @@ import React, {
 } from "react";
 // Impor semua tipe dari file baru
 import {
+  CulaPhase,
   GameAction,
   GameContextProps,
   GameState,
@@ -22,12 +26,13 @@ const KUIS_ENERGY_COST = 25;
 
 // --- STATE AWAL ---
 const initialState: GameState = {
-  xp: 0, // Mulai dari 0
+  xp: 0,
   xpToNextLevel: XP_PER_LEVEL,
   phase: "Baby",
   koin: 15,
   energi: 100,
   maxEnergi: 100,
+  volume: 1,
   currentOutfit: {
     bajuId: "baju-dasar",
     topiId: "topi-dasar",
@@ -64,54 +69,43 @@ const initialState: GameState = {
   isLoading: true,
 };
 
+// --- HELPER UNTUK LOGIKA XP ---
+const babPhaseMap: { [key: string]: CulaPhase } = {
+  bab1: "Baby",
+  bab2: "Anak",
+  bab3: "Remaja",
+  bab4: "Dewasa",
+};
+
+const phaseOrder: { [key in CulaPhase]: number } = {
+  Baby: 1,
+  Anak: 2,
+  Remaja: 3,
+  Dewasa: 4,
+};
+// --- AKHIR HELPER ---
+
 // --- REDUCER (Diperbarui) ---
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case "SET_LOADING":
       return { ...state, isLoading: action.payload };
 
+    case "SET_VOLUME":
+      return {
+        ...state,
+        volume: action.payload,
+      };
+
     case "LOAD_STATE":
       return { ...initialState, ...action.payload, isLoading: false };
 
+    // --- LOGIKA XP DIPINDAH DARI SINI ---
     case "TAMBAH_XP": {
-      let newXp = state.xp + action.payload;
-      let newPhase = state.phase;
-      let newProgress = state.materiProgress;
-
-      // Cek Naik Level / Evolusi
-      if (newXp >= state.xpToNextLevel) {
-        newXp = newXp - state.xpToNextLevel; // Reset XP
-        console.log("NAIK LEVEL!");
-
-        // Logika Evolusi
-        if (state.phase === "Baby") {
-          newPhase = "Anak";
-          newProgress = {
-            ...newProgress,
-            bab2: { ...newProgress.bab2, unlocked: true },
-          };
-          console.log("EVOLUSI KE ANAK!");
-        } else if (state.phase === "Anak") {
-          newPhase = "Remaja";
-          newProgress = {
-            ...newProgress,
-            bab3: { ...newProgress.bab3, unlocked: true },
-          };
-          console.log("EVOLUSI KE REMAJA!");
-        } else if (state.phase === "Remaja") {
-          newPhase = "Dewasa";
-          newProgress = {
-            ...newProgress,
-            bab4: { ...newProgress.bab4, unlocked: true },
-          };
-          console.log("EVOLUSI KE DEWASA!");
-        }
-      }
+      // Ini sekarang hanya untuk debug, tidak ada evolusi
       return {
         ...state,
-        xp: newXp,
-        phase: newPhase,
-        materiProgress: newProgress,
+        xp: state.xp + action.payload,
       };
     }
 
@@ -140,7 +134,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
 
     case "KONSUMSI_MAKANAN": {
-      // ... (logika sama seperti sebelumnya)
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
       if (!item || item.currentStacks <= 0) return state;
@@ -155,7 +148,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     }
 
     case "BELI_MAKANAN": {
-      // ... (logika sama seperti sebelumnya)
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
       if (
@@ -175,7 +167,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     }
 
     case "REFILL_MAKANAN": {
-      // ... (logika sama seperti sebelumnya)
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
       const now = Date.now();
@@ -201,8 +192,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
 
     // --- LOGIKA KUIS BARU ---
     case "START_KUIS":
-      // Pengecekan energi & cooldown dilakukan di halaman kuis
-      // Di sini kita hanya potong energi & set timestamp
       return {
         ...state,
         energi: Math.max(0, state.energi - KUIS_ENERGY_COST),
@@ -214,28 +203,70 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       const newHistory: QuizAttempt = {
         babId,
         score,
-        total: XP_PER_LEVEL,
+        total: 10, // Menggunakan 10, bukan XP_PER_LEVEL agar konsisten
         timestamp: Date.now(),
-        passed: score === XP_PER_LEVEL,
+        passed: score === 10,
       };
+
+      // --- REVISI: LOGIKA 0 XP UNTUK KUIS LAMA ---
+      const intendedPhase = babPhaseMap[babId];
+      const playerPhase = state.phase;
+      const xpGained =
+        phaseOrder[playerPhase] > phaseOrder[intendedPhase] ? 0 : score;
+
+      console.log(
+        `Fase Pemain: ${playerPhase}, Fase Kuis: ${intendedPhase}. XP didapat: ${xpGained}`
+      );
+
+      // --- REVISI: LOGIKA EVOLUSI PINDAH KE SINI ---
+      let newXp = state.xp + xpGained;
+      let newPhase = state.phase;
+      let newProgress = state.materiProgress;
+
+      // Cek Naik Level / Evolusi (Hanya jika dapat XP)
+      if (xpGained > 0 && newXp >= state.xpToNextLevel) {
+        newXp = newXp - state.xpToNextLevel; // Reset XP
+        console.log("NAIK LEVEL!");
+
+        if (state.phase === "Baby") {
+          newPhase = "Anak";
+          newProgress = {
+            ...newProgress,
+            bab2: { ...newProgress.bab2, unlocked: true },
+          };
+          console.log("EVOLUSI KE ANAK!");
+        } else if (state.phase === "Anak") {
+          newPhase = "Remaja";
+          newProgress = {
+            ...newProgress,
+            bab3: { ...newProgress.bab3, unlocked: true },
+          };
+          console.log("EVOLUSI KE REMAJA!");
+        } else if (state.phase === "Remaja") {
+          newPhase = "Dewasa";
+          newProgress = {
+            ...newProgress,
+            bab4: { ...newProgress.bab4, unlocked: true },
+          };
+          console.log("EVOLUSI KE DEWASA!");
+        }
+      }
+      // --- AKHIR LOGIKA EVOLUSI ---
 
       return {
         ...state,
-        // Tambahkan XP
-        xp: state.xp + score,
-        // Tandai kuis sudah selesai
+        xp: newXp,
+        phase: newPhase,
         materiProgress: {
-          ...state.materiProgress,
-          [babId]: { ...state.materiProgress[babId], completedQuiz: true },
+          ...newProgress,
+          [babId]: { ...newProgress[babId], completedQuiz: true },
         },
-        // Tambahkan ke riwayat
         quizHistory: [...state.quizHistory, newHistory],
       };
     }
 
-    // Ini bisa dipanggil oleh TAMBAH_XP
     case "EVOLVE_CULA": {
-      // (Logika ini sekarang ada di dalam TAMBAH_XP)
+      // (Logika ini sekarang ada di dalam SUBMIT_KUIS)
       return state;
     }
 

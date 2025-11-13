@@ -64,6 +64,7 @@ export interface GameState {
   quizHistory: QuizAttempt[]; // <-- BARU
   lastQuizTimestamp: number; // <-- BARU (untuk cooldown)
   isLoading: boolean;
+  volume: number;
 }
 
 // Tipe Aksi
@@ -75,6 +76,7 @@ export type GameAction =
   | { type: "TAMBAH_ENERGI"; payload: number }
   | { type: "TAMBAH_KOIN"; payload: number }
   | { type: "KURANGI_KOIN"; payload: number }
+  | { type: "SET_VOLUME"; payload: number }
   | {
       type: "GANTI_OUTFIT";
       payload: { itemType: keyof Outfit; itemId: string };

@@ -203,7 +203,6 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
   const [isPengaturanVisible, setPengaturanVisible] = useState<boolean>(false);
   const [isEnergiVisible, setEnergiVisible] = useState<boolean>(false);
   const [isNavigasiVisible, setNavigasiVisible] = useState<boolean>(false);
-  const [volume, setVolume] = useState<number>(0.5);
 
   const handleExitToHome = () => {
     setPengaturanVisible(false);
@@ -327,8 +326,14 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
           visible={isPengaturanVisible}
           onClose={() => setPengaturanVisible(false)}
           onExit={handleExitToHome}
-          volume={volume}
-          setVolume={setVolume}
+          volume={state.volume} //
+          setVolume={(newVolume) => {
+            const resolvedVolume =
+              typeof newVolume === "function"
+                ? newVolume(state.volume)
+                : newVolume;
+            dispatch({ type: "SET_VOLUME", payload: resolvedVolume });
+          }}
           onGunakanEnergi={handleGunakanEnergi}
           onTambahEnergi={handleTambahEnergi}
           onDapatKoin={handleDapatKoin}

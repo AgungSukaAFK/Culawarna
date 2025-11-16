@@ -24,12 +24,12 @@ const REFILL_TIME_MS = 3 * 60 * 1000;
 const XP_PER_LEVEL = 10;
 const KUIS_ENERGY_COST = 25;
 
-// --- STATE AWAL ---
+// --- STATE AWAL (Diperbarui) ---
 const initialState: GameState = {
   xp: 0,
   xpToNextLevel: XP_PER_LEVEL,
   phase: "Baby",
-  koin: 15,
+  koin: 15, // Ubah jadi 1500 untuk testing toko jika mau
   energi: 100,
   maxEnergi: 100,
   volume: 1,
@@ -67,7 +67,13 @@ const initialState: GameState = {
   quizHistory: [],
   lastQuizTimestamp: 0,
   isLoading: true,
-  isMinigameActive: false, // <-- TAMBAHKAN INI
+  isMinigameActive: false,
+
+  // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
+  ownedBaju: ["baju-dasar"],
+  ownedTopi: ["topi-dasar"],
+  ownedAksesoris: [],
+  // ----------------------------------------
 };
 
 // ... (Helper tetap sama) ...
@@ -103,8 +109,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return { ...initialState, ...action.payload, isLoading: false };
 
     // ... (case 'TAMBAH_XP' s/d 'REFILL_MAKANAN' tetap sama) ...
-
-    // --- LOGIKA XP DIPINDAH DARI SINI ---
     case "TAMBAH_XP": {
       // Ini sekarang hanya untuk debug, tidak ada evolusi
       return {
@@ -112,22 +116,17 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         xp: state.xp + action.payload,
       };
     }
-
     case "GUNAKAN_ENERGI":
       return { ...state, energi: Math.max(0, state.energi - action.payload) };
-
     case "TAMBAH_ENERGI":
       return {
         ...state,
         energi: Math.min(state.maxEnergi, state.energi + action.payload),
       };
-
     case "TAMBAH_KOIN":
       return { ...state, koin: state.koin + action.payload };
-
     case "KURANGI_KOIN":
       return { ...state, koin: Math.max(0, state.koin - action.payload) };
-
     case "GANTI_OUTFIT":
       return {
         ...state,
@@ -136,7 +135,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           [action.payload.itemType]: action.payload.itemId,
         },
       };
-
     case "KONSUMSI_MAKANAN": {
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
@@ -150,7 +148,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         },
       };
     }
-
     case "BELI_MAKANAN": {
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
@@ -169,8 +166,8 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         },
       };
     }
-
     case "REFILL_MAKANAN": {
+      // ... (logika refill tetap sama) ...
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
       const now = Date.now();
@@ -194,44 +191,36 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return state;
     }
 
-    // --- LOGIKA KUIS BARU ---
+    // ... (case 'START_KUIS' dan 'SUBMIT_KUIS' tetap sama) ...
     case "START_KUIS":
       return {
         ...state,
         energi: Math.max(0, state.energi - KUIS_ENERGY_COST),
         lastQuizTimestamp: Date.now(),
       };
-
     case "SUBMIT_KUIS": {
+      // ... (logika submit kuis tetap sama) ...
       const { babId, score } = action.payload;
       const newHistory: QuizAttempt = {
         babId,
         score,
-        total: 10, // Menggunakan 10, bukan XP_PER_LEVEL agar konsisten
+        total: 10,
         timestamp: Date.now(),
         passed: score === 10,
       };
-
-      // --- REVISI: LOGIKA 0 XP UNTUK KUIS LAMA ---
       const intendedPhase = babPhaseMap[babId];
       const playerPhase = state.phase;
       const xpGained =
         phaseOrder[playerPhase] > phaseOrder[intendedPhase] ? 0 : score;
-
       console.log(
         `Fase Pemain: ${playerPhase}, Fase Kuis: ${intendedPhase}. XP didapat: ${xpGained}`
       );
-
-      // --- REVISI: LOGIKA EVOLUSI PINDAH KE SINI ---
       let newXp = state.xp + xpGained;
       let newPhase = state.phase;
       let newProgress = state.materiProgress;
-
-      // Cek Naik Level / Evolusi (Hanya jika dapat XP)
       if (xpGained > 0 && newXp >= state.xpToNextLevel) {
-        newXp = newXp - state.xpToNextLevel; // Reset XP
+        newXp = newXp - state.xpToNextLevel;
         console.log("NAIK LEVEL!");
-
         if (state.phase === "Baby") {
           newPhase = "Anak";
           newProgress = {
@@ -255,8 +244,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           console.log("EVOLUSI KE DEWASA!");
         }
       }
-      // --- AKHIR LOGIKA EVOLUSI ---
-
       return {
         ...state,
         xp: newXp,
@@ -270,16 +257,37 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     }
 
     case "EVOLVE_CULA": {
-      // (Logika ini sekarang ada di dalam SUBMIT_KUIS)
       return state;
     }
 
-    // --- TAMBAHKAN CASE INI ---
     case "SET_MINIGAME_ACTIVE":
       return {
         ...state,
         isMinigameActive: action.payload,
       };
+
+    // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
+    case "BELI_ITEM": {
+      const { itemId, itemType } = action.payload;
+
+      if (itemType === "bajuId") {
+        if (state.ownedBaju.includes(itemId)) return state; // Sudah punya
+        return { ...state, ownedBaju: [...state.ownedBaju, itemId] };
+      }
+      if (itemType === "topiId") {
+        if (state.ownedTopi.includes(itemId)) return state; // Sudah punya
+        return { ...state, ownedTopi: [...state.ownedTopi, itemId] };
+      }
+      if (itemType === "aksesorisId") {
+        if (state.ownedAksesoris.includes(itemId)) return state; // Sudah punya
+        return {
+          ...state,
+          ownedAksesoris: [...state.ownedAksesoris, itemId],
+        };
+      }
+      return state;
+    }
+    // ----------------------------------------
 
     default:
       return state;

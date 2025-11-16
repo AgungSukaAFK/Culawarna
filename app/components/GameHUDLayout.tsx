@@ -155,7 +155,7 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
           <View style={styles.navigasiGrid}>
             <TouchableOpacity
               style={styles.navigasiModalButton}
-              onPress={() => onNavigate("toko")}
+              onPress={() => router.push("/toko")}
             >
               <MaterialCommunityIcons name="store" size={30} color="#4A2A00" />
               <Text style={styles.navigasiModalText}>Toko Budaya</Text>

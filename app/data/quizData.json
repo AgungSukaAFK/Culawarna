@@ -5,52 +5,46 @@
     "questions": [
       {
         "type": "BENAR_SALAH",
-        "image": "placeholder.png",
-        "questionText": "Ini adalah contoh kelompok sosial primer. Benar atau Salah?",
+        "questionText": "Pengelompokan sosial (social grouping) adalah kumpulan orang yang saling berinteraksi dan memiliki kesamaan identitas.",
+        "correctAnswer": false
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Tahap 'Storming' dalam perkembangan kelompok ditandai dengan munculnya perbedaan pendapat dan konflik antaranggota.",
         "correctAnswer": true
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Paguyuban (Gemeinschaft) adalah kelompok sosial yang longgar. Benar atau Salah?",
+        "questionText": "Organisasi OSIS di sekolah adalah contoh dari kelompok primer.",
         "correctAnswer": false
       },
-      { "type": "BENAR_SALAH", "questionText": "...", "correctAnswer": true },
-      { "type": "BENAR_SALAH", "questionText": "...", "correctAnswer": true },
-      { "type": "BENAR_SALAH", "questionText": "...", "correctAnswer": false },
       {
         "type": "ABCD",
-        "questionText": "Manakah di bawah ini yang merupakan ciri kelompok sosial?",
+        "questionText": "Manakah dari berikut ini yang BUKAN merupakan tahap perkembangan kelompok menurut Bruce W. Tuckman?",
+        "options": ["Forming", "Storming", "Performing", "Conforming"],
+        "correctAnswer": "Conforming"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Kelompok yang menjadi acuan bagi perilaku atau standar seseorang disebut...",
         "options": [
-          "Memiliki struktur",
-          "Bersifat sementara",
-          "Tidak saling kenal",
-          "Tidak ada tujuan"
+          "Kelompok Primer",
+          "Kelompok Referensi",
+          "In-group",
+          "Out-group"
         ],
-        "correctAnswer": "Memiliki struktur"
+        "correctAnswer": "Kelompok Referensi"
       },
       {
         "type": "ABCD",
-        "questionText": "...",
-        "options": ["A", "B", "C", "D"],
-        "correctAnswer": "A"
+        "questionText": "Gaya kepemimpinan yang memberikan kebebasan penuh kepada anggotanya untuk mengambil keputusan disebut...",
+        "options": ["Otoriter", "Demokratis", "Laissez-faire", "Konformitas"],
+        "correctAnswer": "Laissez-faire"
       },
       {
-        "type": "ABCD",
-        "questionText": "...",
-        "options": ["A", "B", "C", "D"],
-        "correctAnswer": "B"
-      },
-      {
-        "type": "ABCD",
-        "questionText": "...",
-        "options": ["A", "B", "C", "D"],
-        "correctAnswer": "C"
-      },
-      {
-        "type": "ABCD",
-        "questionText": "...",
-        "options": ["A", "B", "C", "D"],
-        "correctAnswer": "D"
+        "type": "BENAR_SALAH",
+        "questionText": "Penyesuaian diri individu terhadap nilai dan norma kelompok agar diterima di lingkungannya disebut Konformitas.",
+        "correctAnswer": true
       }
     ]
   },
@@ -58,23 +52,146 @@
     "id": "bab2",
     "title": "BAB 2: Permasalahan Sosial",
     "questions": [
-      { "type": "BENAR_SALAH", "questionText": "...", "correctAnswer": true },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Suatu kondisi dianggap sebagai permasalahan sosial jika sesuai dengan nilai dan norma yang berlaku di masyarakat.",
+        "correctAnswer": false
+      },
       {
         "type": "ABCD",
-        "questionText": "...",
-        "options": ["A", "B", "C", "D"],
-        "correctAnswer": "A"
+        "questionText": "Manakah dari berikut ini yang merupakan contoh permasalahan sosial akibat pengelompokan sosial?",
+        "options": [
+          "Bencana alam",
+          "Intoleransi",
+          "Wabah penyakit",
+          "Perubahan cuaca"
+        ],
+        "correctAnswer": "Intoleransi"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Prasangka negatif dan diskriminasi dapat menjadi akar dari permasalahan sosial yang mengancam kerukunan.",
+        "correctAnswer": true
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Strategi politik penjajah Belanda untuk memecah belah kelompok di Nusantara dikenal sebagai...",
+        "options": [
+          "Laissez-faire",
+          "Devide et Impera",
+          "Inklusi Sosial",
+          "Peacebuilding"
+        ],
+        "correctAnswer": "Devide et Impera"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Korupsi, Kolusi, dan Nepotisme (KKN) adalah salah satu dampak positif dari pengelompokan sosial.",
+        "correctAnswer": false
       }
     ]
   },
   "bab3": {
     "id": "bab3",
     "title": "BAB 3: Konflik Sosial",
-    "questions": []
+    "questions": [
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Konflik berasal dari kata Latin 'conflictus' yang berarti 'benturan'.",
+        "correctAnswer": true
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Setiap konflik sosial yang terjadi di masyarakat pasti akan selalu berakhir dengan kekerasan fisik.",
+        "correctAnswer": false
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Konflik antara dua kelompok yang memiliki kedudukan sejajar (misal: antarsuporter tim sepak bola) disebut...",
+        "options": [
+          "Konflik Vertikal",
+          "Konflik Horizontal",
+          "Konflik Konstruktif",
+          "Konflik Intrapersonal"
+        ],
+        "correctAnswer": "Konflik Horizontal"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Upaya penyelesaian konflik dengan bantuan pihak ketiga yang keputusannya TIDAK mengikat kedua belah pihak disebut...",
+        "options": ["Arbitrase", "Adjudikasi", "Mediasi", "Transformasi"],
+        "correctAnswer": "Mediasi"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Salah satu dampak positif dari konflik adalah dapat memperkuat solidaritas internal dalam suatu kelompok.",
+        "correctAnswer": true
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Alat analisis konflik yang memetakan 'Sikap', 'Perilaku', dan 'Kontradiksi' dari pihak yang berkonflik adalah...",
+        "options": [
+          "Pohon Konflik",
+          "Segitiga SPK",
+          "Peta Konflik",
+          "Analisis SWOT"
+        ],
+        "correctAnswer": "Segitiga SPK"
+      }
+    ]
   },
   "bab4": {
     "id": "bab4",
     "title": "BAB 4: Harmoni Sosial",
-    "questions": []
+    "questions": [
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Harmoni sosial adalah proses menciptakan kehidupan yang rukun, damai, dan seimbang di tengah perbedaan.",
+        "correctAnswer": true
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Prinsip yang menekankan pada rasa saling memiliki, saling percaya, dan solidaritas antaranggota masyarakat disebut...",
+        "options": [
+          "Inklusi Sosial",
+          "Integrasi Sosial",
+          "Kohesi Sosial",
+          "Partisipasi Sosial"
+        ],
+        "correctAnswer": "Kohesi Sosial"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Upaya memberi kesempatan dan akses yang sama kepada semua orang, termasuk kelompok rentan, disebut...",
+        "options": [
+          "Inklusi Sosial",
+          "Integrasi Sosial",
+          "Kohesi Sosial",
+          "Harmoni Sosial"
+        ],
+        "correctAnswer": "Inklusi Sosial"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Mengadakan musyawarah atau audiensi publik adalah contoh upaya membangun harmoni dalam bentuk 'Menginformasikan'.",
+        "correctAnswer": false
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Analisis untuk mengetahui Kekuatan, Kelemahan, Peluang, dan Ancaman dalam merencanakan aksi sosial disebut...",
+        "options": [
+          "Analisis SPK",
+          "Analisis SWOT",
+          "Analisis Kohesi",
+          "Analisis Inklusi"
+        ],
+        "correctAnswer": "Analisis SWOT"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Filantropi sosial adalah kegiatan menyebarkan pesan edukatif melalui media sosial untuk menumbuhkan kesadaran.",
+        "correctAnswer": false
+      }
+    ]
   }
 }

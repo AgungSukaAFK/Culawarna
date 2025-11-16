@@ -23,7 +23,7 @@ export interface FoodItem {
   cost: number;
 }
 
-// Tipe Materi & Kuis (BARU)
+// Tipe Materi & Kuis
 export interface QuizQuestion {
   type: "BENAR_SALAH" | "ABCD";
   image?: string; // Nama file gambar di assets
@@ -63,12 +63,18 @@ export interface GameState {
   maxEnergi: number;
   currentOutfit: Outfit;
   foodInventory: { [foodId: string]: FoodItem };
-  materiProgress: MateriProgress; // <-- BARU
-  quizHistory: QuizAttempt[]; // <-- BARU
-  lastQuizTimestamp: number; // <-- BARU (untuk cooldown)
+  materiProgress: MateriProgress;
+  quizHistory: QuizAttempt[];
+  lastQuizTimestamp: number;
   isLoading: boolean;
   volume: number;
-  isMinigameActive: boolean; // <-- TAMBAHKAN INI
+  isMinigameActive: boolean;
+
+  // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
+  ownedBaju: string[];
+  ownedTopi: string[];
+  ownedAksesoris: string[];
+  // ----------------------------------------
 }
 
 // Tipe Aksi
@@ -83,17 +89,19 @@ export type GameAction =
   | { type: "SET_VOLUME"; payload: number }
   | {
       type: "GANTI_OUTFIT";
-      payload: { itemType: keyof Outfit; itemId: string };
+      payload: { itemType: keyof Outfit; itemId: string | null }; // Izinkan null
     }
   | { type: "EVOLUSI"; payload: { newPhase: CulaPhase; nextLevelXp: number } }
   | { type: "KONSUMSI_MAKANAN"; payload: { foodId: string } }
   | { type: "BELI_MAKANAN"; payload: { foodId: string } }
   | { type: "REFILL_MAKANAN"; payload: { foodId: string } }
-  // --- Aksi Kuis (BARU) ---
   | { type: "START_KUIS" }
   | { type: "SUBMIT_KUIS"; payload: { babId: string; score: number } }
   | { type: "EVOLVE_CULA"; payload: { newPhase: CulaPhase } }
-  | { type: "SET_MINIGAME_ACTIVE"; payload: boolean }; // <-- TAMBAHKAN INI
+  | { type: "SET_MINIGAME_ACTIVE"; payload: boolean }
+  // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
+  | { type: "BELI_ITEM"; payload: { itemId: string; itemType: keyof Outfit } };
+// ----------------------------------------
 
 export interface GameContextProps {
   state: GameState;
@@ -128,5 +136,5 @@ export interface ModalNavigasiProps {
 export interface ModalLemariProps {
   visible: boolean;
   onClose: () => void;
-  onGantiBaju: () => void;
+  // Hapus onGantiBaju, modal akan handle sendiri
 }

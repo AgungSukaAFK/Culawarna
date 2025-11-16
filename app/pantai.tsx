@@ -1,11 +1,12 @@
 // Di dalam file: app/pantai.tsx
-// (GANTI SELURUH FILE ANDA DENGAN INI)
+// (KODE LENGKAP DENGAN PENGECEKAN ENERGI)
 
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert, // <-- 1. Impor Alert
   Image,
   Modal,
   Platform,
@@ -18,20 +19,21 @@ import {
 
 // Impor Tipe, Layout, dan Konteks
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
+import { useGameContext } from "@/app/context/GameContext"; // <-- 2. Impor GameContext
 
-// --- KOMPONEN MODAL PEMILIHAN MINIGAME (Diperbarui) ---
+// --- KOMPONEN MODAL PEMILIHAN MINIGAME (Tidak berubah) ---
 interface ModalMinigameSelectProps {
   visible: boolean;
   onClose: () => void;
   onSelectMemoryGame: () => void;
-  onSelectFoodDrop: () => void; // <-- TAMBAHKAN INI
+  onSelectFoodDrop: () => void;
 }
 
 const ModalMinigameSelect: React.FC<ModalMinigameSelectProps> = ({
   visible,
   onClose,
   onSelectMemoryGame,
-  onSelectFoodDrop, // <-- TAMBAHKAN INI
+  onSelectFoodDrop,
 }) => {
   return (
     <Modal
@@ -62,8 +64,8 @@ const ModalMinigameSelect: React.FC<ModalMinigameSelectProps> = ({
 
             {/* Tombol Food Drop (Sekarang Aktif) */}
             <TouchableOpacity
-              style={styles.gameSelectionButton} // <-- Hapus style disabled
-              onPress={onSelectFoodDrop} // <-- Tambahkan onPress
+              style={styles.gameSelectionButton}
+              onPress={onSelectFoodDrop}
             >
               <Ionicons name="rainy" size={40} color="#4A2A00" />
               <Text style={styles.gameSelectionText}>Food Drop</Text>
@@ -92,9 +94,40 @@ const ModalMinigameSelect: React.FC<ModalMinigameSelectProps> = ({
 // --- LAYAR PANTAI (UTAMA) ---
 export default function PantaiScreen() {
   const router = useRouter();
+  const { state, dispatch } = useGameContext(); // <-- 3. Dapatkan state & dispatch
   const [isSelectModalVisible, setSelectModalVisible] = useState(false);
 
-  // (Kita tidak perlu handleGameWin di sini lagi)
+  const MINIGAME_ENERGY_COST = 15; // <-- 4. Tentukan biaya energi
+
+  // --- 5. Buat fungsi handler untuk Memory Game ---
+  const handleSelectMemoryGame = () => {
+    if (state.energi < MINIGAME_ENERGY_COST) {
+      Alert.alert(
+        "Si Cula Lelah!",
+        "Energi tidak cukup untuk bermain. Isi energi dulu di Dapur."
+      );
+      return;
+    }
+    // Kurangi energi, tutup modal, lalu main
+    dispatch({ type: "GUNAKAN_ENERGI", payload: MINIGAME_ENERGY_COST });
+    setSelectModalVisible(false);
+    router.push("/minigame/memory-food");
+  };
+
+  // --- 6. Buat fungsi handler untuk Food Drop ---
+  const handleSelectFoodDrop = () => {
+    if (state.energi < MINIGAME_ENERGY_COST) {
+      Alert.alert(
+        "Si Cula Lelah!",
+        "Energi tidak cukup untuk bermain. Isi energi dulu di Dapur."
+      );
+      return;
+    }
+    // Kurangi energi, tutup modal, lalu main
+    dispatch({ type: "GUNAKAN_ENERGI", payload: MINIGAME_ENERGY_COST });
+    setSelectModalVisible(false);
+    router.push("/minigame/food-drop");
+  };
 
   return (
     <GameHUDLayout
@@ -107,17 +140,12 @@ export default function PantaiScreen() {
         text: "Main Game",
       }}
       pageModal={
+        // --- 7. Gunakan handler baru di modal ---
         <ModalMinigameSelect
           visible={isSelectModalVisible}
           onClose={() => setSelectModalVisible(false)}
-          onSelectMemoryGame={() => {
-            setSelectModalVisible(false);
-            router.push("/minigame/memory-food");
-          }}
-          onSelectFoodDrop={() => {
-            setSelectModalVisible(false);
-            router.push("/minigame/food-drop"); // <-- Arahkan ke file baru
-          }}
+          onSelectMemoryGame={handleSelectMemoryGame}
+          onSelectFoodDrop={handleSelectFoodDrop}
         />
       }
     >
@@ -132,7 +160,7 @@ export default function PantaiScreen() {
   );
 }
 
-// --- STYLESHEET (Diperbarui) ---
+// --- STYLESHEET (Tidak berubah) ---
 const styles = StyleSheet.create({
   kontenArea: {
     flex: 1,
@@ -217,7 +245,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   disabledButton: {
-    // (Style ini masih ada, tapi tidak kita pakai di tombol)
     backgroundColor: "#AAA",
     borderColor: "#777",
     opacity: 0.7,

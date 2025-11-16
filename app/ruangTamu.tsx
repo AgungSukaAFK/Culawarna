@@ -1,3 +1,6 @@
+// Di dalam file: app/ruangTamu.tsx
+// (PERBARUI FILE ANDA)
+
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
@@ -14,27 +17,39 @@ import {
 
 // Impor Tipe, Layout, dan Konteks
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
-import { useGameContext } from "@/app/context/GameContext"; //
+import { useGameContext } from "@/app/context/GameContext";
+import { Outfit } from "./types/gameTypes"; // <-- Impor Outfit
 
 // --- INTERFACE LOKAL ---
 interface ModalDekorasiProps {
   visible: boolean;
   onClose: () => void;
-  onPasangDekorasi: (dekorId: string) => void;
+  // Hapus onPasangDekorasi, modal akan handle sendiri
 }
 
-// --- KOMPONEN MODAL SPESIFIK RUANG TAMU ---
-const ModalDekorasi: React.FC<ModalDekorasiProps> = ({
-  visible,
-  onClose,
-  onPasangDekorasi,
-}) => {
-  // TODO: Ambil inventory dekorasi dari state
-  const ownedDekorasi = [
-    { id: "dekor-sofa-1", name: "Sofa Merah", icon: "couch" },
-    { id: "dekor-lampu-1", name: "Lampu Meja", icon: "lightbulb" },
-    { id: "dekor-lukisan-1", name: "Lukisan", icon: "image" },
-  ];
+// --- KOMPONEN MODAL SPESIFIK RUANG TAMU (Diperbarui) ---
+const ModalDekorasi: React.FC<ModalDekorasiProps> = ({ visible, onClose }) => {
+  const { state, dispatch } = useGameContext();
+
+  // Fungsi untuk memasang dekorasi
+  const handlePasangDekorasi = (
+    itemType: keyof Outfit,
+    itemId: string | null
+  ) => {
+    dispatch({
+      type: "GANTI_OUTFIT",
+      payload: { itemType, itemId },
+    });
+    // onClose(); // Opsional: tutup modal setelah memilih
+  };
+
+  // Fungsi untuk mendapatkan ikon (placeholder)
+  const getIconForItem = (itemId: string) => {
+    if (itemId === "dekor-golok") {
+      return "gavel";
+    }
+    return "star"; // Ikon default
+  };
 
   return (
     <Modal
@@ -48,18 +63,36 @@ const ModalDekorasi: React.FC<ModalDekorasiProps> = ({
           <Text style={styles.modalTitle}>Pilih Dekorasi</Text>
           <ScrollView style={{ width: "100%" }}>
             <View style={styles.dekorasiGrid}>
-              {ownedDekorasi.map((item) => (
+              {/* Tombol Lepas Dekorasi */}
+              <TouchableOpacity
+                style={[
+                  styles.itemDekorasi,
+                  state.currentOutfit.aksesorisId === null &&
+                    styles.itemSelected,
+                ]}
+                onPress={() => handlePasangDekorasi("aksesorisId", null)}
+              >
+                <Ionicons name="close-circle" size={40} color="#4A2A00" />
+                <Text style={styles.itemDekorasiText}>Lepas</Text>
+              </TouchableOpacity>
+
+              {/* Render item dari inventory */}
+              {state.ownedAksesoris.map((itemId) => (
                 <TouchableOpacity
-                  key={item.id}
-                  style={styles.itemDekorasi}
-                  onPress={() => onPasangDekorasi(item.id)}
+                  key={itemId}
+                  style={[
+                    styles.itemDekorasi,
+                    state.currentOutfit.aksesorisId === itemId &&
+                      styles.itemSelected,
+                  ]}
+                  onPress={() => handlePasangDekorasi("aksesorisId", itemId)}
                 >
                   <FontAwesome5
-                    name={item.icon as any}
+                    name={getIconForItem(itemId) as any}
                     size={40}
                     color="#4A2A00"
                   />
-                  <Text style={styles.itemDekorasiText}>{item.name}</Text>
+                  <Text style={styles.itemDekorasiText}>{itemId}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -84,43 +117,33 @@ const ModalDekorasi: React.FC<ModalDekorasiProps> = ({
 // --- LAYAR RUANG TAMU ---
 export default function RuangTamuScreen() {
   const router = useRouter();
-  const { state } = useGameContext();
+  const { state } = useGameContext(); // <-- Ambil state
   const [isDekorasiVisible, setDekorasiVisible] = useState<boolean>(false);
-
-  // Handler spesifik halaman
-  const handlePasangDekorasi = (dekorId: string) => {
-    console.log("Pasang dekorasi:", dekorId);
-    // TODO: dispatch aksi untuk mengubah state dekorasi
-    setDekorasiVisible(false);
-  };
 
   return (
     <GameHUDLayout
-      // Latar belakang (ganti dengan aset 'ruangtamu_bg.png' jika sudah ada)
-      backgroundImage={require("@/assets/images/guest.png")} //
-      // Tombol navigasi internal
-      onPressNavLeft={() => router.replace("/kamar")} // Ke Dapur
-      onPressNavRight={() => router.replace("/dapur")} // Ke Kamar
-      // Tombol aksi tengah
+      backgroundImage={require("@/assets/images/guest.png")}
+      onPressNavLeft={() => router.replace("/kamar")}
+      onPressNavRight={() => router.replace("/dapur")}
       middleNavButton={{
         onPress: () => setDekorasiVisible(true),
         icon: <FontAwesome5 name="couch" size={24} color="white" />,
         text: "Dekorasi",
       }}
-      // Modal spesifik
       pageModal={
         <ModalDekorasi
           visible={isDekorasiVisible}
           onClose={() => setDekorasiVisible(false)}
-          onPasangDekorasi={handlePasangDekorasi}
         />
       }
     >
       {/* Konten Halaman Ini */}
       <View style={styles.kontenArea}>
-        <Text style={styles.textPlaceholder}>(Ini Ruang Tamu)</Text>
+        <Text style={styles.textPlaceholder}>
+          (Dekorasi: {state.currentOutfit.aksesorisId || "Kosong"})
+        </Text>
         <Image
-          source={require("@/assets/images/cula_character.png")} //
+          source={require("@/assets/images/cula_character.png")}
           style={styles.karakter}
         />
       </View>
@@ -128,7 +151,7 @@ export default function RuangTamuScreen() {
   );
 }
 
-// --- STYLESHEET (Hanya style spesifik halaman + modal) ---
+// --- STYLESHEET (Diperbarui) ---
 const styles = StyleSheet.create({
   kontenArea: {
     flex: 1,
@@ -196,8 +219,8 @@ const styles = StyleSheet.create({
   // --- Style Modal Dekorasi (BARU) ---
   dekorasiGrid: {
     flexDirection: "row",
-    flexWrap: "wrap", // Agar bisa ke baris baru
-    justifyContent: "center", // Pusatkan item
+    flexWrap: "wrap",
+    justifyContent: "flex-start", // Ubah ke flex-start
     width: "100%",
   },
   itemDekorasi: {
@@ -207,8 +230,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#4A2A00",
-    width: "45%", // Buat jadi 2 kolom
-    margin: 5, // Beri jarak antar item
+    width: "45%",
+    margin: 5,
+  },
+  itemSelected: {
+    backgroundColor: "#d4edda", // Warna hijau
+    borderColor: "#c3e6cb",
   },
   itemDekorasiText: {
     marginTop: 5,

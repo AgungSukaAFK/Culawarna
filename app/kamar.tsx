@@ -1,3 +1,6 @@
+// Di dalam file: app/kamar.tsx
+// (PERBARUI FILE ANDA)
+
 import {
   FontAwesome5,
   Ionicons,
@@ -9,6 +12,7 @@ import React, { useState } from "react";
 import {
   Image,
   Modal,
+  ScrollView, // <-- Impor ScrollView
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -18,14 +22,20 @@ import {
 // Impor Tipe dan Layout
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
-import { ModalLemariProps } from "./types/gameTypes";
+import { ModalLemariProps, Outfit } from "./types/gameTypes"; // <-- Impor Outfit
 
-// --- KOMPONEN MODAL SPESIFIK KAMAR ---
-const ModalLemari: React.FC<ModalLemariProps> = ({
-  visible,
-  onClose,
-  onGantiBaju,
-}) => {
+// --- KOMPONEN MODAL SPESIFIK KAMAR (Diperbarui) ---
+const ModalLemari: React.FC<ModalLemariProps> = ({ visible, onClose }) => {
+  // Ambil state langsung dari context
+  const { state, dispatch } = useGameContext();
+
+  const handleGanti = (itemType: keyof Outfit, itemId: string | null) => {
+    dispatch({
+      type: "GANTI_OUTFIT",
+      payload: { itemType, itemId },
+    });
+  };
+
   return (
     <Modal
       visible={visible}
@@ -36,12 +46,70 @@ const ModalLemari: React.FC<ModalLemariProps> = ({
       <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Lemari Baju</Text>
-          <View style={styles.lemariGrid}>
-            <TouchableOpacity style={styles.itemBaju} onPress={onGantiBaju}>
-              <FontAwesome5 name="tshirt" size={40} color="#4A2A00" />
-              <Text style={styles.itemBajuText}>Baju Acak</Text>
-            </TouchableOpacity>
-          </View>
+          <ScrollView style={{ width: "100%" }}>
+            {/* --- Kategori Topi --- */}
+            <Text style={styles.categoryTitle}>Topi</Text>
+            <View style={styles.lemariGrid}>
+              {/* Tombol Lepas Topi */}
+              <TouchableOpacity
+                style={[
+                  styles.itemBaju,
+                  state.currentOutfit.topiId === null && styles.itemSelected,
+                ]}
+                onPress={() => handleGanti("topiId", null)}
+              >
+                <Ionicons name="close-circle" size={40} color="#4A2A00" />
+                <Text style={styles.itemBajuText}>Lepas</Text>
+              </TouchableOpacity>
+              {/* Render semua topi yang dimiliki */}
+              {state.ownedTopi.map((itemId) => (
+                <TouchableOpacity
+                  key={itemId}
+                  style={[
+                    styles.itemBaju,
+                    state.currentOutfit.topiId === itemId &&
+                      styles.itemSelected,
+                  ]}
+                  onPress={() => handleGanti("topiId", itemId)}
+                >
+                  <FontAwesome5 name="hat-wizard" size={40} color="#4A2A00" />
+                  <Text style={styles.itemBajuText}>{itemId}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* --- Kategori Baju --- */}
+            <Text style={styles.categoryTitle}>Baju</Text>
+            <View style={styles.lemariGrid}>
+              {/* Tombol Lepas Baju */}
+              <TouchableOpacity
+                style={[
+                  styles.itemBaju,
+                  state.currentOutfit.bajuId === null && styles.itemSelected,
+                ]}
+                onPress={() => handleGanti("bajuId", null)}
+              >
+                <Ionicons name="close-circle" size={40} color="#4A2A00" />
+                <Text style={styles.itemBajuText}>Lepas</Text>
+              </TouchableOpacity>
+              {/* Render semua baju yang dimiliki */}
+              {state.ownedBaju.map((itemId) => (
+                <TouchableOpacity
+                  key={itemId}
+                  style={[
+                    styles.itemBaju,
+                    state.currentOutfit.bajuId === itemId &&
+                      styles.itemSelected,
+                  ]}
+                  onPress={() => handleGanti("bajuId", itemId)}
+                >
+                  <FontAwesome5 name="tshirt" size={40} color="#4A2A00" />
+                  <Text style={styles.itemBajuText}>{itemId}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+
           <TouchableOpacity
             style={[
               styles.modalButton,
@@ -62,27 +130,14 @@ const ModalLemari: React.FC<ModalLemariProps> = ({
 // --- LAYAR KAMAR ---
 export default function KamarScreen() {
   const router = useRouter();
-  const { state, dispatch } = useGameContext();
+  const { state } = useGameContext(); // Hanya perlu state di sini
   const [isLemariVisible, setLemariVisible] = useState<boolean>(false);
-
-  // Handler spesifik halaman
-  const handleGantiBaju = () => {
-    const bajuBaru = `baju_${Math.floor(Math.random() * 10)}`;
-    dispatch({
-      type: "GANTI_OUTFIT",
-      payload: { itemType: "bajuId", itemId: bajuBaru },
-    });
-    setLemariVisible(false);
-  };
 
   return (
     <GameHUDLayout
-      // Latar belakang spesifik
-      backgroundImage={require("@/assets/images/kamar_bg.png")} //
-      // Tombol navigasi internal
+      backgroundImage={require("@/assets/images/kamar_bg.png")}
       onPressNavLeft={() => router.replace("/dapur")}
       onPressNavRight={() => router.replace("/ruangTamu")}
-      // Tombol aksi tengah
       middleNavButton={{
         onPress: () => setLemariVisible(true),
         icon: (
@@ -90,12 +145,11 @@ export default function KamarScreen() {
         ),
         text: "Lemari",
       }}
-      // Modal spesifik
       pageModal={
         <ModalLemari
           visible={isLemariVisible}
           onClose={() => setLemariVisible(false)}
-          onGantiBaju={handleGantiBaju}
+          // Hapus props onGantiBaju
         />
       }
     >
@@ -104,8 +158,11 @@ export default function KamarScreen() {
         <Text style={styles.textPlaceholder}>
           (Baju: {state.currentOutfit.bajuId || "Kosong"})
         </Text>
+        <Text style={styles.textPlaceholder}>
+          (Topi: {state.currentOutfit.topiId || "Kosong"})
+        </Text>
         <Image
-          source={require("@/assets/images/cula_character.png")} //
+          source={require("@/assets/images/cula_character.png")}
           style={styles.karakterKamar}
         />
       </View>
@@ -113,7 +170,7 @@ export default function KamarScreen() {
   );
 }
 
-// --- STYLESHEET (Hanya style spesifik halaman + modal) ---
+// --- STYLESHEET (Diperbarui) ---
 const styles = StyleSheet.create({
   kontenArea: {
     flex: 1,
@@ -132,7 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.5)",
     padding: 5,
     borderRadius: 5,
-    marginBottom: -20,
+    marginBottom: 5, // Beri jarak antar text
     zIndex: 1,
   },
   // --- Style Modal ---
@@ -178,23 +235,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#8A2BE2",
     borderColor: "#4B0082",
   },
-  // --- Style Modal Lemari ---
+  // --- Style Modal Lemari (Baru) ---
+  categoryTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#4A2A00",
+    alignSelf: "flex-start",
+    marginTop: 10,
+    marginBottom: 5,
+  },
   lemariGrid: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    flexWrap: "wrap", // Biarkan item turun ke baris baru
+    justifyContent: "flex-start", // Mulai dari kiri
     width: "100%",
   },
   itemBaju: {
     backgroundColor: "rgba(255, 255, 255, 0.7)",
-    padding: 15,
+    padding: 10,
     borderRadius: 10,
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#4A2A00",
+    width: "30%", // Buat jadi 3 kolom
+    margin: 5, // Jarak antar item
+  },
+  itemSelected: {
+    backgroundColor: "#d4edda", // Warna hijau
+    borderColor: "#c3e6cb",
   },
   itemBajuText: {
     marginTop: 5,
     color: "#4A2A00",
     fontWeight: "bold",
+    fontSize: 12,
   },
 });

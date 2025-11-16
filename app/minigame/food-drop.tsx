@@ -1,8 +1,5 @@
-// Di dalam file: app/minigame/food-drop.tsx
-// (GANTI SELURUH FILE ANDA DENGAN KODE INI)
-
 import { useGameContext } from "@/app/context/GameContext";
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { router } from "expo-router";
 import React, { memo, useEffect, useRef, useState } from "react";
@@ -11,6 +8,7 @@ import {
   Dimensions,
   Image,
   ImageBackground,
+  ImageSourcePropType,
   Platform,
   StyleSheet,
   Text,
@@ -22,7 +20,9 @@ import {
   GestureDetector,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
+// --- PERBAIKAN 1: Impor dari 'react-native-reanimated' ---
 import Animated, {
+  cancelAnimation,
   Easing,
   runOnJS,
   SharedValue,
@@ -35,40 +35,37 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// --- Konstanta Game (Karakter Diperbesar) ---
+// --- Konstanta Game ---
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
-const PLAYER_WIDTH = 80; // <-- DIPERBESAR
-const PLAYER_HEIGHT = 80; // <-- DIPERBESAR
-const OBJECT_SIZE = 40;
+const PLAYER_WIDTH = 120;
+const PLAYER_HEIGHT = 120;
+const OBJECT_SIZE = 40; // Ukuran gambar
 const GAME_TIME_SECONDS = 30;
 const KOIN_PER_FOOD = 2;
 const FALL_SPEED_MIN = 2;
 const FALL_SPEED_MAX = 5;
 const BOMB_CHANCE = 0.2;
-const SPAWN_INTERVAL_MS = 800;
+const SPAWN_INTERVAL_MS = 1200;
+
+// --- PERBAIKAN 2: Menggunakan Aset Gambar ---
+// (Pastikan path ini sesuai dengan struktur folder Anda)
+const foodAssets = {
+  apple: require("@/assets/images/apple.png"),
+  banana: require("@/assets/images/banana.png"),
+  bread: require("@/assets/images/bread.png"),
+};
+const bombAsset = require("@/assets/images/bomb.png");
+const foodKeys = Object.keys(foodAssets) as (keyof typeof foodAssets)[];
 
 interface FallingObjectData {
   id: number;
   x: number;
   yStart: number;
   type: "food" | "bomb";
-  icon: React.ComponentProps<typeof FontAwesome5>["name"];
+  image: ImageSourcePropType;
   speed: number;
 }
-
-const getRandomFoodIcon = (): React.ComponentProps<
-  typeof FontAwesome5
->["name"] => {
-  const icons: React.ComponentProps<typeof FontAwesome5>["name"][] = [
-    "fish",
-    "drumstick-bite",
-    "carrot",
-    "apple-alt",
-    "cookie",
-  ];
-  return icons[Math.floor(Math.random() * icons.length)];
-};
 
 // --- KOMPONEN OBJEK JATUH (DIPERBARUI) ---
 const FallingObjectComponent: React.FC<{
@@ -77,21 +74,21 @@ const FallingObjectComponent: React.FC<{
   onCatch: (id: number) => void;
   onBomb: () => void;
   onMiss: (id: number) => void;
-  isGameActive: boolean;
+  isGameActive: SharedValue<boolean>;
 }> = memo(({ data, playerX, onCatch, onBomb, onMiss, isGameActive }) => {
-  const { id, x, yStart, type, icon, speed } = data;
+  const { id, x, yStart, type, image, speed } = data;
   const y = useSharedValue(yStart);
   const isCaught = useSharedValue(false);
   const scale = useSharedValue(1);
-  const opacity = useSharedValue(1); // <-- EFEK BARU: Kontrol opacity
+  const opacity = useSharedValue(1);
 
   // Efek animasi jatuh
   useEffect(() => {
-    if (isGameActive) {
+    if (isGameActive.value) {
       y.value = withTiming(
         SCREEN_HEIGHT + OBJECT_SIZE,
         {
-          duration: (SCREEN_HEIGHT / speed) * 30,
+          duration: (SCREEN_HEIGHT / speed) * 30, // Durasi disesuaikan dengan speed
           easing: Easing.linear,
         },
         (finished) => {
@@ -102,24 +99,47 @@ const FallingObjectComponent: React.FC<{
         }
       );
     }
-  }, [isGameActive, y, speed, id, onMiss, isCaught]);
+  }, [isGameActive.value, y, speed, id, onMiss, isCaught]); // Gunakan isGameActive.value
 
   // Deteksi tabrakan
   useFrameCallback(() => {
-    if (!isGameActive || isCaught.value) return;
+    if (!isGameActive.value || isCaught.value) return;
 
     const pX = playerX.value;
     const oY = y.value;
 
-    // Perbesar area deteksi sedikit karena karakter lebih besar
-    const isVerticalHit =
-      oY > SCREEN_HEIGHT - PLAYER_HEIGHT - 30 && oY < SCREEN_HEIGHT - 30;
-    const isHorizontalHit =
-      x < pX + PLAYER_WIDTH - 10 && x + OBJECT_SIZE > pX + 10;
+    // --- PERBAIKAN 3: Logika Tabrakan Kepala (AABB Overlap) ---
+    const playerBottomMargin = 30; // Sesuai style 'bottom: 30'
+    const playerHeadHitbox = 40; // Hanya 40px area kepala yang dihitung
+    const playerHorizontalPadding = 20; // Padding horizontal
 
+    // Koordinat Y Pemain (Kepala)
+    const playerHeadTopY = SCREEN_HEIGHT - playerBottomMargin - PLAYER_HEIGHT;
+    const playerHeadBottomY = playerHeadTopY + playerHeadHitbox;
+
+    // Koordinat Y Objek
+    const objectTopY = oY;
+    const objectBottomY = oY + OBJECT_SIZE;
+
+    // Cek Vertikal (Overlap antara object dan kepala pemain)
+    const isVerticalHit =
+      objectBottomY > playerHeadTopY && objectTopY < playerHeadBottomY;
+
+    // Koordinat X Pemain (Hitbox)
+    const playerHitboxLeftX = pX + playerHorizontalPadding;
+    const playerHitboxRightX = pX + PLAYER_WIDTH - playerHorizontalPadding;
+
+    // Koordinat X Objek
+    const objectLeftX = x;
+    const objectRightX = x + OBJECT_SIZE;
+
+    // Cek Horizontal (Overlap antara object dan hitbox pemain)
+    const isHorizontalHit =
+      objectRightX > playerHitboxLeftX && objectLeftX < playerHitboxRightX;
+
+    // Hanya jika KEDUA axis tumpang tindih
     if (isVerticalHit && isHorizontalHit) {
-      // Hentikan objek agar tidak memicu 'onMiss'
-      y.value = withTiming(y.value); // Membatalkan animasi 'withTiming' sebelumnya
+      cancelAnimation(y); // Hentikan animasi jatuh
       isCaught.value = true;
 
       if (type === "bomb") {
@@ -131,17 +151,9 @@ const FallingObjectComponent: React.FC<{
         opacity.value = withDelay(50, withTiming(0, { duration: 200 }));
         runOnJS(onBomb)();
       } else {
-        // --- EFEK MAKAN BARU ---
-        // 1. Meletup sedikit
-        scale.value = withTiming(1.2, { duration: 80 });
-        // 2. Menciut dan fade out, LALU panggil onCatch
-        opacity.value = withTiming(0, { duration: 200 }, (finished) => {
-          if (finished) {
-            // Hapus dari state SETELAH animasi selesai
-            runOnJS(onCatch)(id);
-          }
-        });
-        scale.value = withDelay(80, withTiming(0, { duration: 120 }));
+        // Makanan tertangkap
+        opacity.value = 0; // Langsung hilangkan
+        runOnJS(onCatch)(id); // Update skor & state
       }
     }
   });
@@ -149,7 +161,7 @@ const FallingObjectComponent: React.FC<{
   // Style animasi untuk objek
   const animatedObjectStyle = useAnimatedStyle(() => {
     return {
-      opacity: opacity.value, // Gunakan shared value opacity
+      opacity: opacity.value,
       transform: [
         { translateY: y.value },
         { scale: scale.value }, // Terapkan scale
@@ -159,11 +171,7 @@ const FallingObjectComponent: React.FC<{
 
   return (
     <Animated.View style={[styles.object, { left: x }, animatedObjectStyle]}>
-      <FontAwesome5
-        name={icon}
-        size={OBJECT_SIZE - 10}
-        color={type === "bomb" ? "#333" : "#4A2A00"}
-      />
+      <Image source={image} style={styles.objectImage} />
     </Animated.View>
   );
 });
@@ -179,6 +187,7 @@ export default function FoodDropScreen() {
   const [countdown, setCountdown] = useState<string | number>(3);
 
   const playerX = useSharedValue(SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2);
+  const isGameActiveSV = useSharedValue(false); // SharedValue untuk status game
   const objectIdCounter = useRef(0);
 
   const sfxCatchRef = useRef<Audio.Sound | null>(null);
@@ -190,16 +199,14 @@ export default function FoodDropScreen() {
 
     const loadSounds = async () => {
       try {
-        // GANTI 'kuis.mp3' DENGAN 'catch.mp3' JIKA SUDAH ADA
         const { sound: catchSound } = await Audio.Sound.createAsync(
-          require("@/assets/audio/kuis.mp3"),
+          require("@/assets/audio/kuis.mp3"), // Ganti jika punya sfx 'catch'
           { volume: state.volume }
         );
         sfxCatchRef.current = catchSound;
 
-        // GANTI 'home.mp3' DENGAN 'bomb.mp3' JIKA SUDAH ADA
         const { sound: bombSound } = await Audio.Sound.createAsync(
-          require("@/assets/audio/home.mp3"),
+          require("@/assets/audio/home.mp3"), // Ganti jika punya sfx 'bomb'
           { volume: state.volume }
         );
         sfxBombRef.current = bombSound;
@@ -215,7 +222,9 @@ export default function FoodDropScreen() {
         if (typeof prev === "number" && prev > 1) return prev - 1;
         if (prev === 1) return "Mulai!";
         clearInterval(countdownTimer);
+        // Update kedua state (React dan Reanimated)
         setIsGameActive(true);
+        isGameActiveSV.value = true;
         return "";
       });
     }, 1000);
@@ -253,12 +262,17 @@ export default function FoodDropScreen() {
     if (!isGameActive || isGameOver) return;
     const spawnTimer = setInterval(() => {
       const type = Math.random() < BOMB_CHANCE ? "bomb" : "food";
+      // Logika untuk memilih gambar
+      const randomFoodKey =
+        foodKeys[Math.floor(Math.random() * foodKeys.length)];
+      const image = type === "bomb" ? bombAsset : foodAssets[randomFoodKey];
+
       const newObjectData: FallingObjectData = {
         id: objectIdCounter.current++,
         x: Math.random() * (SCREEN_WIDTH - OBJECT_SIZE),
         yStart: -OBJECT_SIZE,
         type: type,
-        icon: type === "bomb" ? "bomb" : getRandomFoodIcon(),
+        image: image,
         speed:
           Math.random() * (FALL_SPEED_MAX - FALL_SPEED_MIN) + FALL_SPEED_MIN,
       };
@@ -270,9 +284,7 @@ export default function FoodDropScreen() {
   // Handler Gestur
   const gesture = Gesture.Pan()
     .onChange((e) => {
-      // PERBAIKAN: Gunakan `playerX.value` untuk kalkulasi
       const newX = playerX.value + e.changeX;
-      // Gunakan PLAYER_WIDTH yang baru
       playerX.value = Math.max(0, Math.min(newX, SCREEN_WIDTH - PLAYER_WIDTH));
     })
     .runOnJS(true);
@@ -296,7 +308,6 @@ export default function FoodDropScreen() {
   // Fungsi Logika Game
   const handleCatchFood = (id: number) => {
     playCatchSound();
-    // Hapus dari state, komponennya akan unmount
     setObjects((prev) => prev.filter((obj) => obj.id !== id));
     setScore((prev) => prev + 1);
   };
@@ -310,6 +321,7 @@ export default function FoodDropScreen() {
     playBombSound();
     setIsGameOver(true);
     setIsGameActive(false);
+    isGameActiveSV.value = false;
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
     Alert.alert("BOOM!", "Kamu terkena bom!", [
       { text: "OK", onPress: () => router.back() },
@@ -320,6 +332,7 @@ export default function FoodDropScreen() {
     if (isGameOver) return;
     setIsGameOver(true);
     setIsGameActive(false);
+    isGameActiveSV.value = false;
     const koinWon = score * KOIN_PER_FOOD;
     dispatch({ type: "TAMBAH_KOIN", payload: koinWon });
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
@@ -361,7 +374,7 @@ export default function FoodDropScreen() {
                     onCatch={handleCatchFood}
                     onBomb={handleGameOver}
                     onMiss={onMiss}
-                    isGameActive={isGameActive}
+                    isGameActive={isGameActiveSV}
                   />
                 ))}
 
@@ -435,9 +448,11 @@ const styles = StyleSheet.create({
   player: {
     position: "absolute",
     bottom: 30,
-    width: PLAYER_WIDTH, // <-- Menggunakan konstanta baru
-    height: PLAYER_HEIGHT, // <-- Menggunakan konstanta baru
+    width: PLAYER_WIDTH,
+    height: PLAYER_HEIGHT,
     zIndex: 5,
+    // borderWidth: 1, // Uncomment untuk debug hitbox
+    // borderColor: 'red', // Uncomment untuk debug hitbox
   },
   playerImage: {
     width: "100%",
@@ -448,12 +463,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: OBJECT_SIZE,
     height: OBJECT_SIZE,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    borderRadius: OBJECT_SIZE / 2,
     justifyContent: "center",
     alignItems: "center",
-    borderColor: "#4A2A00",
-    borderWidth: 2,
     zIndex: 1,
+    // borderWidth: 1, // Uncomment untuk debug hitbox
+    // borderColor: 'blue', // Uncomment untuk debug hitbox
+  },
+  objectImage: {
+    width: OBJECT_SIZE,
+    height: OBJECT_SIZE,
+    resizeMode: "contain",
   },
 });

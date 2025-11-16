@@ -169,7 +169,7 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.navigasiModalButton}
-              onPress={() => onNavigate("pantai")}
+              onPress={() => router.push("/pantai")}
             >
               <Ionicons name="planet" size={30} color="#4A2A00" />
               <Text style={styles.navigasiModalText}>Pantai</Text>

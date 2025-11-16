@@ -1,3 +1,6 @@
+// Di dalam file: app/types/gameTypes.ts
+// (PERBARUI FILE ANDA)
+
 import { ReactNode } from "react";
 
 // Tipe Status Cula
@@ -65,6 +68,7 @@ export interface GameState {
   lastQuizTimestamp: number; // <-- BARU (untuk cooldown)
   isLoading: boolean;
   volume: number;
+  isMinigameActive: boolean; // <-- TAMBAHKAN INI
 }
 
 // Tipe Aksi
@@ -88,14 +92,15 @@ export type GameAction =
   // --- Aksi Kuis (BARU) ---
   | { type: "START_KUIS" }
   | { type: "SUBMIT_KUIS"; payload: { babId: string; score: number } }
-  | { type: "EVOLVE_CULA"; payload: { newPhase: CulaPhase } };
+  | { type: "EVOLVE_CULA"; payload: { newPhase: CulaPhase } }
+  | { type: "SET_MINIGAME_ACTIVE"; payload: boolean }; // <-- TAMBAHKAN INI
 
 export interface GameContextProps {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
 }
 
-// Tipe Props Komponen (Bisa dihapus jika tidak pakai GameHUDLayout)
+// ... (Sisa props komponen tetap sama) ...
 export interface NavButtonProps {
   onPress: () => void;
   icon: ReactNode;

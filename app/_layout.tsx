@@ -8,11 +8,12 @@ import { AppState } from "react-native";
 import { GameProvider, useGameContext } from "./context/GameContext";
 
 // Definisikan tipe lagu dan path-nya
-type TrackName = "home" | "game" | "kuis";
+type TrackName = "home" | "game" | "kuis" | "minigame"; // <-- Tambah 'minigame'
 const trackMap: Record<TrackName, any> = {
   home: require("@/assets/audio/home.mp3"),
   game: require("@/assets/audio/game.mp3"),
   kuis: require("@/assets/audio/kuis.mp3"),
+  minigame: require("@/assets/audio/kuis.mp3"), // <-- Pake audio kuis untuk minigame
 };
 
 // Objek untuk menyimpan referensi ke SEMUA sound
@@ -20,6 +21,7 @@ interface SoundRefs {
   home: Audio.Sound | null;
   game: Audio.Sound | null;
   kuis: Audio.Sound | null;
+  minigame: Audio.Sound | null; // <-- Tambah 'minigame'
 }
 
 /**
@@ -30,16 +32,22 @@ function AudioManager() {
   const pathname = usePathname();
 
   // Ref untuk menyimpan semua objek sound
-  const soundRef = useRef<SoundRefs>({ home: null, game: null, kuis: null });
+  const soundRef = useRef<SoundRefs>({
+    home: null,
+    game: null,
+    kuis: null,
+    minigame: null, // <-- Tambah 'minigame'
+  });
   // State untuk melacak apakah semua sound sudah siap
   const [isLoaded, setIsLoaded] = useState(false);
+  // State untuk melacak trek mana yang HARUSNYA diputar
+  const [activeTrack, setActiveTrack] = useState<TrackName | null>(null);
 
-  // --- LANGKAH 1: Muat SEMUA audio sekali saat app pertama kali dibuka ---
+  // --- LANGKAH 1: Muat SEMUA audio ---
   useEffect(() => {
     const loadAllAudio = async () => {
       console.log("[Audio] Memuat semua trek...");
       try {
-        // Set mode audio agar bisa diputar meski dalam mode silent (iOS)
         await Audio.setAudioModeAsync({
           playsInSilentModeIOS: true,
         });
@@ -65,7 +73,14 @@ function AudioManager() {
         );
         soundRef.current.kuis = kuisSound;
 
-        setIsLoaded(true); // Tandai semua sudah siap
+        // Muat 'minigame' (BARU)
+        const { sound: minigameSound } = await Audio.Sound.createAsync(
+          trackMap.minigame,
+          { isLooping: true, volume: state.volume }
+        );
+        soundRef.current.minigame = minigameSound;
+
+        setIsLoaded(true);
         console.log("[Audio] Semua trek berhasil dimuat.");
       } catch (e) {
         console.error("[Audio] Gagal memuat semua trek:", e);
@@ -74,21 +89,30 @@ function AudioManager() {
 
     loadAllAudio();
 
-    // Cleanup: Unload semua audio saat aplikasi ditutup
+    // Cleanup: Unload semua audio
     return () => {
       console.log("[Audio] Unloading semua trek...");
       soundRef.current.home?.unloadAsync();
       soundRef.current.game?.unloadAsync();
       soundRef.current.kuis?.unloadAsync();
+      soundRef.current.minigame?.unloadAsync(); // <-- Tambah 'minigame'
     };
-  }, []); // <-- Array dependensi kosong, hanya berjalan sekali
+  }, []); // <-- Hanya berjalan sekali
 
-  // --- LANGKAH 2: Ganti lagu berdasarkan 'pathname' ---
+  // --- LANGKAH 2: Tentukan trek mana yang harus aktif ---
   useEffect(() => {
-    if (!isLoaded) return; // Jangan lakukan apa-apa jika audio belum siap
+    if (!isLoaded) return;
 
+    // Jika minigame aktif, paksa putar 'minigame'
+    if (state.isMinigameActive) {
+      setActiveTrack("minigame");
+      return;
+    }
+
+    // Jika tidak, tentukan berdasarkan pathname
     let newTrack: TrackName | null = null;
-    if (pathname === "/") {
+    if (pathname === "/" || pathname === "/pantai") {
+      // <-- Tambah /pantai
       newTrack = "home";
     } else if (["/kamar", "/dapur", "/ruangTamu"].includes(pathname)) {
       newTrack = "game";
@@ -96,18 +120,29 @@ function AudioManager() {
       newTrack = "kuis";
     }
 
+    setActiveTrack(newTrack);
+  }, [pathname, isLoaded, state.isMinigameActive]); // <-- Tambah dependency
+
+  // --- LANGKAH 3: Putar/Pause trek yang aktif ---
+  useEffect(() => {
+    if (!isLoaded || !activeTrack) {
+      // Jika tidak ada trek aktif (misal di /riwayat), matikan semua
+      if (isLoaded) {
+        Object.values(soundRef.current).forEach((sound) => sound?.pauseAsync());
+      }
+      return;
+    }
+
     const switchTrack = async () => {
-      console.log(`[Audio] Pindah layar ke: ${pathname}, memutar: ${newTrack}`);
+      console.log(`[Audio] Memutar trek: ${activeTrack}`);
       try {
-        // Loop semua sound yang kita punya
+        // Loop semua sound
         for (const [trackName, sound] of Object.entries(soundRef.current)) {
           if (sound) {
-            // Jika ini adalah lagu yang harus diputar
-            if (trackName === newTrack) {
-              await sound.playAsync();
+            if (trackName === activeTrack) {
+              await sound.playAsync(); // Putar trek yang aktif
             } else {
-              // Jika ini lagu lain, PAUSE
-              await sound.pauseAsync();
+              await sound.pauseAsync(); // Pause trek lainnya
             }
           }
         }
@@ -117,83 +152,46 @@ function AudioManager() {
     };
 
     switchTrack();
-  }, [pathname, isLoaded]); // <-- Berjalan saat 'pathname' berubah atau saat 'isLoaded'
+  }, [activeTrack]); // <-- Berjalan saat activeTrack berubah
 
-  // --- LANGKAH 3: Atur volume saat slider digerakkan ---
+  // --- LANGKAH 4: Atur volume ---
   useEffect(() => {
     if (!isLoaded) return;
 
     const setAllVolumes = async () => {
       console.log(`[Audio] Mengatur volume ke: ${state.volume}`);
       try {
-        // Terapkan volume baru ke SEMUA sound
         await soundRef.current.home?.setVolumeAsync(state.volume);
         await soundRef.current.game?.setVolumeAsync(state.volume);
         await soundRef.current.kuis?.setVolumeAsync(state.volume);
+        await soundRef.current.minigame?.setVolumeAsync(state.volume); // <-- Tambah 'minigame'
       } catch (e) {
-        console.warn(
-          "[Audio] Gagal set volume (mungkin sound sedang memuat)",
-          e
-        );
+        console.warn("[Audio] Gagal set volume", e);
       }
     };
 
     setAllVolumes();
-  }, [state.volume]); // <-- Berjalan saat 'state.volume' berubah
+  }, [state.volume]); // <-- Berjalan saat state.volume berubah
 
-  // --- LANGKAH 4: Tangani App State (Pause/Play) ---
+  // --- LANGKAH 5: Tangani App State (Background/Foreground) ---
   useEffect(() => {
     if (!isLoaded) return;
 
     const subscription = AppState.addEventListener(
       "change",
       async (nextAppState) => {
-        // Cari tahu lagu apa yang sedang aktif
-        let activeSound: Audio.Sound | null = null;
+        // Dapatkan sound yang sedang aktif
+        const soundToControl = activeTrack
+          ? soundRef.current[activeTrack]
+          : null;
 
-        // Periksa home
-        if (soundRef.current.home) {
-          const statusHome = await soundRef.current.home.getStatusAsync();
-          if (
-            "isLoaded" in statusHome &&
-            statusHome.isLoaded &&
-            statusHome.isPlaying
-          ) {
-            activeSound = soundRef.current.home;
-          }
-        }
-
-        // Periksa game (hanya jika belum ketemu activeSound)
-        if (!activeSound && soundRef.current.game) {
-          const statusGame = await soundRef.current.game.getStatusAsync();
-          if (
-            "isLoaded" in statusGame &&
-            statusGame.isLoaded &&
-            statusGame.isPlaying
-          ) {
-            activeSound = soundRef.current.game;
-          }
-        }
-
-        // Periksa kuis (hanya jika belum ketemu activeSound)
-        if (!activeSound && soundRef.current.kuis) {
-          const statusKuis = await soundRef.current.kuis.getStatusAsync();
-          if (
-            "isLoaded" in statusKuis &&
-            statusKuis.isLoaded &&
-            statusKuis.isPlaying
-          ) {
-            activeSound = soundRef.current.kuis;
-          }
-        }
-
-        if (!activeSound) return;
+        if (!soundToControl) return;
 
         try {
           if (nextAppState.match(/inactive|background/)) {
-            await activeSound.pauseAsync();
+            await soundToControl.pauseAsync();
           } else if (nextAppState === "active") {
-            await activeSound.playAsync();
+            await soundToControl.playAsync();
           }
         } catch (e) {
           console.error("[Audio] Gagal pause/play:", e);
@@ -204,7 +202,7 @@ function AudioManager() {
     return () => {
       subscription.remove();
     };
-  }, [isLoaded]); // <-- Berjalan setelah 'isLoaded'
+  }, [isLoaded, activeTrack]); // <-- Tambah activeTrack
 
   return null; // Komponen ini tidak me-render UI
 }

@@ -1,5 +1,5 @@
-// Nama file: app/context/GameContext.tsx
-// (GANTI SELURUH FILE ANDA DENGAN INI)
+// Di dalam file: app/context/GameContext.tsx
+// (PERBARUI FILE ANDA)
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
@@ -67,8 +67,10 @@ const initialState: GameState = {
   quizHistory: [],
   lastQuizTimestamp: 0,
   isLoading: true,
+  isMinigameActive: false, // <-- TAMBAHKAN INI
 };
 
+// ... (Helper tetap sama) ...
 // --- HELPER UNTUK LOGIKA XP ---
 const babPhaseMap: { [key: string]: CulaPhase } = {
   bab1: "Baby",
@@ -99,6 +101,8 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
 
     case "LOAD_STATE":
       return { ...initialState, ...action.payload, isLoading: false };
+
+    // ... (case 'TAMBAH_XP' s/d 'REFILL_MAKANAN' tetap sama) ...
 
     // --- LOGIKA XP DIPINDAH DARI SINI ---
     case "TAMBAH_XP": {
@@ -270,10 +274,19 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return state;
     }
 
+    // --- TAMBAHKAN CASE INI ---
+    case "SET_MINIGAME_ACTIVE":
+      return {
+        ...state,
+        isMinigameActive: action.payload,
+      };
+
     default:
       return state;
   }
 };
+
+// ... (Sisa file, Provider, dan Hook tetap sama) ...
 
 // --- 4. CREATE CONTEXT ---
 const GameContext = createContext<GameContextProps | undefined>(undefined);

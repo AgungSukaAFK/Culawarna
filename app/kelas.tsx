@@ -5,7 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { BlurView } from "expo-blur";
 // Hapus Constants
-import { Stack, useRouter } from "expo-router";
+import { router, Stack, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -326,7 +326,7 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.navigasiModalButton}
-              onPress={() => onNavigate("pantai")}
+              onPress={() => router.push("/pantai")}
             >
               <Ionicons name="planet" size={30} color="#4A2A00" />
               <Text style={styles.navigasiModalText}>Pantai</Text>

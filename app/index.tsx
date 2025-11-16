@@ -39,7 +39,7 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
     require("@/assets/profiles/naufal.png"),
     require("@/assets/profiles/umam.png"),
   ];
-  const NAMA_GRUP_INSTAGRAM = "culawarna.sis";
+  const NAMA_GRUP_INSTAGRAM = "mammoours";
 
   const handleGroupInstaPress = () => {
     Linking.openURL(`https://instagram.com/${NAMA_GRUP_INSTAGRAM}`);
@@ -64,10 +64,10 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
           >
             <Text style={styles.modalTitle}>Tentang Culawarna</Text>
             <Text style={styles.aboutText}>
-              **Culawarna** adalah game edukasi *virtual pet* untuk mempelajari
-              konsep-konsep dasar **Sosiologi**.
+              Culawarna adalah game edukasi virtual pet untuk mempelajari
+              konsep-konsep dasar Sosiologi.
               {"\n\n"}
-              Pelihara **Si Cula**, bantu dia belajar dengan menjawab kuis
+              Pelihara Si Cula, bantu dia belajar dengan menjawab kuis
               Sosiologi, dan saksikan dia berevolusi! Aplikasi ini mengambil
               tema Budaya Banten sebagai latar cerita visualnya.
             </Text>

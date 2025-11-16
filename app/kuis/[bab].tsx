@@ -2,22 +2,22 @@
 // (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
 
 import { useGameContext } from "@/app/context/GameContext";
-import AllQuizData from "@/app/data/quizData.json";
-import { CulaPhase, QuizQuestion } from "@/app/types/gameTypes"; // <-- Impor CulaPhase
+import { QuizQuestion } from "@/app/types/gameTypes"; // Hapus CulaPhase
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AllQuizData from "@/app/data/quizData.json";
+import { ActivityIndicator } from "react-native";
 
 type Answer = string | boolean | null;
 
@@ -31,7 +31,7 @@ export default function KuisScreen() {
   const [selectedAnswer, setSelectedAnswer] = useState<Answer>(null);
   const [quizStarted, setQuizStarted] = useState(false);
 
-  // 1. Muat Soal & Mulai Kuis
+  // (useEffect untuk Muat Soal tetap sama)
   useEffect(() => {
     if (bab && AllQuizData[bab]) {
       const babQuestions = AllQuizData[bab].questions as QuizQuestion[];
@@ -56,16 +56,14 @@ export default function KuisScreen() {
     }
   }, [bab]);
 
-  // 2. Tangani jika user keluar di tengah kuis
+  // (useEffect untuk 'beforeRemove' tetap sama)
   useEffect(() => {
     if (Platform.OS === "web") return;
-
     interface NavigationEvent {
       preventDefault: () => void;
       [key: string]: unknown;
     }
     type RouterCallback = (e: NavigationEvent) => void;
-
     const listener: RouterCallback = (e) => {
       if (!quizStarted) return;
       e.preventDefault();
@@ -85,19 +83,18 @@ export default function KuisScreen() {
         ]
       );
     };
-
     const unsubscribe = (router as any).addListener?.("beforeRemove", listener);
-
     return () => {
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, [router, quizStarted]);
 
-  // --- HANDLER NAVIGASI KUIS ---
+  // (handleSelectAnswer tetap sama)
   const handleSelectAnswer = (answer: Answer) => {
     setSelectedAnswer(answer);
   };
 
+  // (handleNextQuestion tetap sama)
   const handleNextQuestion = () => {
     const newAnswers = [...answers];
     newAnswers[currentQuestionIndex] = selectedAnswer;
@@ -111,8 +108,9 @@ export default function KuisScreen() {
     }
   };
 
+  // --- PERBAIKAN UTAMA DI FUNGSI INI ---
   const handleSubmitKuis = (finalAnswers: Answer[]) => {
-    // Guard clause (Sudah benar)
+    // Guard clause (Tetap dipertahankan, ini bagus)
     if (typeof bab !== "string" || !AllQuizData[bab]) {
       Alert.alert("Error Kritis", "Gagal menyimpan kuis: ID Bab tidak valid.", [
         { text: "OK", onPress: () => router.back() },
@@ -127,33 +125,18 @@ export default function KuisScreen() {
       }
     });
 
-    // Kirim hasil ke Context
+    // Kirim hasil ke Context. Context yang akan mengurus logika 0 XP.
     dispatch({ type: "SUBMIT_KUIS", payload: { babId: bab, score } });
 
-    // --- PERBAIKAN DI SINI: Definisikan objek yang hilang ---
-    const babPhaseMap: { [key: string]: CulaPhase } = {
-      bab1: "Baby",
-      bab2: "Anak",
-      bab3: "Remaja",
-      bab4: "Dewasa",
-    };
-    const phaseOrder: { [key in CulaPhase]: number } = {
-      Baby: 1,
-      Anak: 2,
-      Remaja: 3,
-      Dewasa: 4,
-    };
-    // --- AKHIR PERBAIKAN ---
+    // --- LOGIKA 0 XP DIHAPUS DARI SINI ---
+    // (Objek babPhaseMap dan phaseOrder dihapus)
 
-    // Perjelas pesan XP
-    const intendedPhase = babPhaseMap[bab];
-    const playerPhase = state.phase;
-    const xpGained =
-      phaseOrder[playerPhase] > phaseOrder[intendedPhase] ? 0 : score;
-
+    // Langsung tampilkan Alert.
+    // Pesan XP kita sederhanakan, karena kita tidak tahu
+    // berapa XP yang didapat (Context yang tahu).
     Alert.alert(
       "Kuis Selesai!",
-      `Skor Anda: ${score} / ${questions.length}\nAnda mendapat ${xpGained} XP!`,
+      `Skor Anda: ${score} / ${questions.length}`, // Pesan disederhanakan
       [
         {
           text: "OK",
@@ -166,13 +149,12 @@ export default function KuisScreen() {
     );
   };
 
-  // --- RENDER ---
+  // --- RENDER (Tetap sama) ---
   if (questions.length === 0) {
     return bab ? (
       <ActivityIndicator style={{ flex: 1, backgroundColor: "#E6F4FE" }} />
     ) : null;
   }
-
   const currentQuestion = questions[currentQuestionIndex];
 
   return (

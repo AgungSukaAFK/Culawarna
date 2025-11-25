@@ -1,5 +1,4 @@
 // Di dalam file: app/toko.tsx
-// (VERSI BARU DENGAN KATEGORI DAN INVENTORY)
 
 import { useGameContext } from "@/app/context/GameContext";
 import { Outfit } from "@/app/types/gameTypes";
@@ -21,41 +20,49 @@ import {
   View,
 } from "react-native";
 
-// --- Tipe Item Toko (Placeholder) ---
+// --- Tipe Item Toko ---
 interface ShopItem {
   id: string;
   name: string;
   price: number;
   icon: React.ComponentProps<typeof FontAwesome5>["name"];
-  itemType: keyof Outfit; // 'bajuId' atau 'topiId'
+  itemType: keyof Outfit; // 'bajuId', 'topiId', atau 'aksesorisId'
 }
 
-// --- Daftar Item Placeholder (By Kategori) ---
+// --- DAFTAR ITEM TOKO (Updated) ---
+// Pastikan ID di sini SAMA PERSIS dengan di characterAssets.ts
 const shopCategories: { title: string; items: ShopItem[] }[] = [
   {
-    title: "Pakaian (Baju)",
+    title: "Pakaian Adat (Baju)",
     items: [
       {
-        id: "baju-pangsi",
-        name: "Baju Pangsi",
-        price: 100,
+        id: "baju-baduy", // ID harus sama dengan logic karakter
+        name: "Baju Pangsi Baduy",
+        price: 150,
         icon: "tshirt",
         itemType: "bajuId",
       },
-      // Tambahkan baju lain di sini jika ada
+      {
+        id: "baju-batik", // Item Baru: Batik
+        name: "Batik Banten",
+        price: 200,
+        icon: "tshirt",
+        itemType: "bajuId",
+      },
     ],
   },
   {
-    title: "Pakaian (Topi)",
+    title: "Aksesoris Kepala",
     items: [
       {
-        id: "topi-baduy",
-        name: "Iket Baduy",
+        id: "peci-hitam", // Item Baru: Peci
+        name: "Peci Nasional",
         price: 50,
-        icon: "hat-wizard", // Placeholder icon
+        icon: "hat-wizard", // Ikon placeholder
         itemType: "topiId",
       },
-      // Tambahkan topi lain di sini jika ada
+      // Jika nanti ada Caping:
+      // { id: "caping-petani", name: "Caping Petani", price: 75, icon: "hat-cowboy", itemType: "topiId" },
     ],
   },
   {
@@ -64,11 +71,10 @@ const shopCategories: { title: string; items: ShopItem[] }[] = [
       {
         id: "dekor-golok",
         name: "Pajangan Golok",
-        price: 75,
-        icon: "gavel", // Placeholder icon
+        price: 300,
+        icon: "gavel",
         itemType: "aksesorisId",
       },
-      // Tambahkan dekorasi lain di sini jika ada
     ],
   },
 ];
@@ -110,7 +116,7 @@ export default function TokoScreen() {
     // 3. Tampilkan konfirmasi
     Alert.alert(
       "Konfirmasi Pembelian",
-      `Yakin ingin membeli ${item.name} seharga ${item.price} koin?`,
+      `Beli ${item.name} seharga ${item.price} koin?`,
       [
         { text: "Batal", style: "cancel" },
         {
@@ -128,7 +134,7 @@ export default function TokoScreen() {
             // 6. Beri notifikasi sukses
             Alert.alert(
               "Berhasil Dibeli!",
-              `${item.name} telah ditambahkan ke inventory kamu. Cek di Kamar (Lemari) atau Ruang Tamu (Dekorasi).`
+              `${item.name} telah ditambahkan ke Lemari.`
             );
           },
         },
@@ -139,12 +145,14 @@ export default function TokoScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={30} color="#4A2A00" />
         </TouchableOpacity>
         <Text style={styles.title}>Toko Budaya</Text>
-        {/* Koin di Header */}
+        {/* Koin Display */}
         <View style={styles.koinContainer}>
           <MaterialCommunityIcons name="gold" size={20} color="#4A2A00" />
           <Text style={styles.koinText}>{state.koin}</Text>
@@ -152,7 +160,7 @@ export default function TokoScreen() {
       </View>
 
       <ScrollView style={styles.scrollContainer}>
-        {/* Render berdasarkan kategori */}
+        {/* Render Kategori */}
         {shopCategories.map((category) => (
           <View key={category.title}>
             <Text style={styles.categoryTitle}>{category.title}</Text>
@@ -165,33 +173,37 @@ export default function TokoScreen() {
                   key={item.id}
                   style={[
                     styles.itemContainer,
-                    isOwned && styles.itemOwned, // Beri style jika sudah dimiliki
+                    isOwned && styles.itemOwned, // Style beda jika sudah punya
                   ]}
                 >
-                  <FontAwesome5
-                    name={item.icon}
-                    size={40}
-                    color="#4A2A00"
-                    style={styles.itemIcon}
-                  />
+                  {/* Ikon Item */}
+                  <View style={styles.iconBox}>
+                    <FontAwesome5 name={item.icon} size={30} color="#4A2A00" />
+                  </View>
+
+                  {/* Info Item */}
                   <View style={styles.itemInfo}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemPrice}>{item.price} Koin</Text>
+                    <Text style={styles.itemPrice}>
+                      {isOwned ? "Sudah dimiliki" : `${item.price} Koin`}
+                    </Text>
                   </View>
+
+                  {/* Tombol Beli */}
                   <TouchableOpacity
                     style={[
                       styles.buyButton,
                       isOwned
-                        ? styles.disabledButton // Style "Dimiliki"
+                        ? styles.disabledButton
                         : !canAfford
-                        ? styles.disabledButton // Style "Tidak Mampu"
-                        : styles.buyButtonActive, // Style "Bisa Beli"
+                        ? styles.disabledButton
+                        : styles.buyButtonActive,
                     ]}
                     onPress={() => handleBeli(item)}
                     disabled={isOwned || !canAfford}
                   >
                     <Text style={styles.buyButtonText}>
-                      {isOwned ? "Dimiliki" : "Beli"}
+                      {isOwned ? "Milikmu" : "Beli"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -199,6 +211,7 @@ export default function TokoScreen() {
             })}
           </View>
         ))}
+        <View style={{ height: 50 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -214,9 +227,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 5,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    borderBottomWidth: 2,
     borderColor: "#4A2A00",
   },
   title: {
@@ -227,11 +241,11 @@ const styles = StyleSheet.create({
   koinContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
     borderRadius: 15,
     paddingVertical: 5,
     paddingHorizontal: 10,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#4A2A00",
   },
   koinText: {
@@ -242,34 +256,43 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-    padding: 10,
+    padding: 15,
   },
-  // Style Kategori
   categoryTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#4A2A00",
-    marginLeft: 5,
-    marginTop: 10,
-    marginBottom: 5,
+    marginTop: 15,
+    marginBottom: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: "rgba(74, 42, 0, 0.2)",
+    paddingBottom: 5,
   },
   itemContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     padding: 15,
     borderRadius: 15,
     borderColor: "#4A2A00",
     borderWidth: 3,
     marginBottom: 10,
+    elevation: 3,
   },
   itemOwned: {
-    backgroundColor: "rgba(220, 220, 220, 0.8)",
+    backgroundColor: "rgba(220, 220, 220, 0.95)",
+    borderColor: "#888",
   },
-  itemIcon: {
+  iconBox: {
+    width: 60,
+    height: 60,
+    backgroundColor: "#FFE4B5",
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 15,
-    width: 40,
-    textAlign: "center",
+    borderWidth: 1,
+    borderColor: "#DEB887",
   },
   itemInfo: {
     flex: 1,
@@ -281,11 +304,12 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 14,
-    color: "#4A2A00",
+    color: "#666",
+    marginTop: 4,
   },
   buyButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 10,
     borderBottomWidth: 3,
   },

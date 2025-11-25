@@ -6,8 +6,7 @@ import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert, // <-- 1. Impor Alert
-  Image,
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -20,6 +19,7 @@ import {
 // Impor Tipe, Layout, dan Konteks
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext"; // <-- 2. Impor GameContext
+import { CulaCharacter } from "./components/CulaCharacter";
 
 // --- KOMPONEN MODAL PEMILIHAN MINIGAME (Tidak berubah) ---
 interface ModalMinigameSelectProps {
@@ -151,10 +151,7 @@ export default function PantaiScreen() {
     >
       {/* Konten Halaman Ini */}
       <View style={styles.kontenArea}>
-        <Image
-          source={require("@/assets/images/cula_character.png")}
-          style={styles.karakter}
-        />
+        <CulaCharacter style={styles.karakter} />
       </View>
     </GameHUDLayout>
   );

@@ -24,6 +24,7 @@ import {
 } from "react-native";
 // --- PERBAIKAN: Impor SafeAreaView dari context ---
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CulaCharacter } from "./components/CulaCharacter";
 import { useGameContext } from "./context/GameContext";
 
 // --- Komponen Modal Info (Tetap sama) ---
@@ -64,7 +65,7 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
           >
             <Text style={styles.modalTitle}>Tentang Culawarna</Text>
             <Text style={styles.aboutText}>
-              Culawarna adalah game edukasi virtual pet untuk mempelajari
+              Culawarna adalah game edukasi *virtual pet* untuk mempelajari
               konsep-konsep dasar Sosiologi.
               {"\n\n"}
               Pelihara Si Cula, bantu dia belajar dengan menjawab kuis
@@ -157,6 +158,12 @@ export default function HomeScreen() {
             style={styles.titleImage}
             resizeMode="contain"
           />
+          {/* --- TEKS BARU DITAMBAHKAN DI SINI --- */}
+          <Text style={styles.subtitleText}>
+            Media Pembelajaran berbasis Game untuk Mata Pelajaran Sosiologi
+            Kelas 11
+          </Text>
+          {/* --- AKHIR TEKS BARU --- */}
         </View>
         {/* ZONA 2: LAUT (Tombol Play) */}
         <View style={styles.seaZone}>
@@ -171,11 +178,7 @@ export default function HomeScreen() {
         </View>
         {/* ZONA 3: PASIR (Karakter) */}
         <View style={styles.sandZone}>
-          <Image
-            source={require("@/assets/images/cula_character.png")}
-            style={styles.character}
-            resizeMode="contain"
-          />
+          <CulaCharacter style={styles.character} />
         </View>
       </SafeAreaView>
 
@@ -272,6 +275,19 @@ const styles = StyleSheet.create({
     height: "60%",
     minHeight: 100, // <-- Tambahkan minHeight untuk web
   },
+  // --- STYLE BARU UNTUK SUBTITLE ---
+  subtitleText: {
+    fontSize: Platform.OS === "web" ? 18 : 21,
+    color: "#000080", // Biru tua, senada dengan title
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 4, // Jarak dari title
+    paddingHorizontal: 20,
+    textShadowColor: "rgba(255, 255, 255, 0.7)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  // --- AKHIR STYLE BARU ---
   playButton: {
     width: 80,
     height: 80,

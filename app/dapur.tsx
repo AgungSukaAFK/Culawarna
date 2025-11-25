@@ -16,6 +16,7 @@ import {
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
 import { FoodItem } from "./types/gameTypes";
+import { CulaCharacter } from "./components/CulaCharacter";
 
 interface ModalMakananProps {
   visible: boolean;
@@ -176,10 +177,7 @@ export default function DapurScreen() {
     >
       {/* Konten Halaman Ini */}
       <View style={styles.kontenArea}>
-        <Image
-          source={require("@/assets/images/cula_character.png")} //
-          style={styles.karakter}
-        />
+        <CulaCharacter style={styles.karakter} />
       </View>
     </GameHUDLayout>
   );

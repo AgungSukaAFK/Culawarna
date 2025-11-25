@@ -6,7 +6,6 @@ import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -18,6 +17,7 @@ import {
 // Impor Tipe, Layout, dan Konteks
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
+import { CulaCharacter } from "./components/CulaCharacter";
 import { Outfit } from "./types/gameTypes"; // <-- Impor Outfit
 
 // --- INTERFACE LOKAL ---
@@ -142,10 +142,7 @@ export default function RuangTamuScreen() {
         <Text style={styles.textPlaceholder}>
           (Dekorasi: {state.currentOutfit.aksesorisId || "Kosong"})
         </Text>
-        <Image
-          source={require("@/assets/images/cula_character.png")}
-          style={styles.karakter}
-        />
+        <CulaCharacter style={styles.karakter} />
       </View>
     </GameHUDLayout>
   );

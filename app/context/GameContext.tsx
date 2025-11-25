@@ -28,14 +28,14 @@ const KUIS_ENERGY_COST = 25;
 const initialState: GameState = {
   xp: 0,
   xpToNextLevel: XP_PER_LEVEL,
-  phase: "Baby",
   koin: 15, // Ubah jadi 1500 untuk testing toko jika mau
   energi: 100,
   maxEnergi: 100,
   volume: 1,
+  phase: "Baby", // Default awal
   currentOutfit: {
-    bajuId: "baju-dasar",
-    topiId: "topi-dasar",
+    bajuId: null, // null artinya tidak pakai baju (Base)
+    topiId: null,
     aksesorisId: null,
   },
   foodInventory: {
@@ -70,8 +70,8 @@ const initialState: GameState = {
   isMinigameActive: false,
 
   // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
-  ownedBaju: ["baju-dasar"],
-  ownedTopi: ["topi-dasar"],
+  ownedBaju: ["baju-baduy", "baju-batik"],
+  ownedTopi: ["peci-hitam"],
   ownedAksesoris: [],
   // ----------------------------------------
 };

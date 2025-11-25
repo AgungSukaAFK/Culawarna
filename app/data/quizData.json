@@ -1,196 +1,579 @@
 {
   "bab1": {
     "id": "bab1",
+    "password": "123",
     "title": "BAB 1: Kelompok Sosial",
     "questions": [
       {
         "type": "BENAR_SALAH",
-        "questionText": "Pengelompokan sosial (social grouping) adalah kumpulan orang yang saling berinteraksi dan memiliki kesamaan identitas.",
-        "correctAnswer": false
+        "questionText": "Urbanisasi termasuk fenomena sosial",
+        "correctAnswer": true,
+        "image": "urbanisasi"
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Tahap 'Storming' dalam perkembangan kelompok ditandai dengan munculnya perbedaan pendapat dan konflik antaranggota.",
-        "correctAnswer": true
+        "questionText": "Antrian di kasir merupakan kelompok sosial",
+        "correctAnswer": false,
+        "image": "antrian"
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Organisasi OSIS di sekolah adalah contoh dari kelompok primer.",
-        "correctAnswer": false
+        "questionText": "Tim basket termasuk kelompok sosial teratur",
+        "correctAnswer": false,
+        "image": "basket"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Penonton konser adalah kelompok sosial permanen",
+        "correctAnswer": false,
+        "image": "konser"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Aksi demo termasuk interaksi sosial",
+        "correctAnswer": true,
+        "image": "demo"
       },
       {
         "type": "ABCD",
-        "questionText": "Manakah dari berikut ini yang BUKAN merupakan tahap perkembangan kelompok menurut Bruce W. Tuckman?",
-        "options": ["Forming", "Storming", "Performing", "Conforming"],
-        "correctAnswer": "Conforming"
-      },
-      {
-        "type": "ABCD",
-        "questionText": "Kelompok yang menjadi acuan bagi perilaku atau standar seseorang disebut...",
+        "questionText": "Kelompok sosial adalah …",
         "options": [
-          "Kelompok Primer",
-          "Kelompok Referensi",
-          "In-group",
+          "Kumpulan individu yang hidup di wilayah yang sama",
+          "Kumpulan dua orang atau lebih yang saling berinteraksi dan memiliki kesamaan",
+          "Sekumpulan orang yang memiliki perbedaan tujuan",
+          "Kelompok yang selalu bersifat formal"
+        ],
+        "correctAnswer": "Kumpulan dua orang atau lebih yang saling berinteraksi dan memiliki kesamaan"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Pengelompokan sosial berbeda dari kelompok sosial karena pengelompokan sosial …",
+        "options": [
+          "Selalu melibatkan interaksi",
+          "Tidak membutuhkan ciri tertentu",
+          "Tidak mengharuskan adanya interaksi langsung",
+          "Bersifat pribadi dan erat"
+        ],
+        "correctAnswer": "Tidak mengharuskan adanya interaksi langsung"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Dasar pembentukan kelompok sosial kecuali …",
+        "options": [
+          "Kesamaan kepentingan",
+          "Tempat tinggal",
+          "Keturunan",
+          "Warna pakaian"
+        ],
+        "correctAnswer": "Warna pakaian"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Tahap storming dalam perkembangan kelompok menurut Tuckman berarti …",
+        "options": [
+          "Pembentukan",
+          "Muncul konflik dan perbedaan pendapat",
+          "Muncul norma kelompok",
+          "Pembubaran kelompok"
+        ],
+        "correctAnswer": "Muncul konflik dan perbedaan pendapat"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Kelompok primer dicirikan oleh …",
+        "options": [
+          "Hubungan formal dan sementara",
+          "Hubungan erat dan pribadi",
+          "Tidak terorganisir",
+          "Terbentuk karena kompetisi"
+        ],
+        "correctAnswer": "Hubungan erat dan pribadi"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "OSIS termasuk jenis kelompok …",
+        "options": ["Primer", "Sekunder", "Referensi", "Luar (out-group)"],
+        "correctAnswer": "Sekunder"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Kelompok yang dijadikan acuan perilaku seseorang disebut …",
+        "options": [
+          "Kelompok primer",
+          "Kelompok sekunder",
+          "Kelompok referensi",
           "Out-group"
         ],
-        "correctAnswer": "Kelompok Referensi"
+        "correctAnswer": "Kelompok referensi"
       },
       {
         "type": "ABCD",
-        "questionText": "Gaya kepemimpinan yang memberikan kebebasan penuh kepada anggotanya untuk mengambil keputusan disebut...",
-        "options": ["Otoriter", "Demokratis", "Laissez-faire", "Konformitas"],
-        "correctAnswer": "Laissez-faire"
+        "questionText": "Kerumunan (crowd) termasuk perilaku kolektif karena …",
+        "options": [
+          "Terorganisir secara formal",
+          "Bersifat spontan dan tidak terorganisir",
+          "Memiliki tujuan jangka panjang",
+          "Memiliki struktur kepengurusan"
+        ],
+        "correctAnswer": "Bersifat spontan dan tidak terorganisir"
       },
       {
-        "type": "BENAR_SALAH",
-        "questionText": "Penyesuaian diri individu terhadap nilai dan norma kelompok agar diterima di lingkungannya disebut Konformitas.",
-        "correctAnswer": true
+        "type": "ABCD",
+        "questionText": "Tahap performing dalam kelompok menunjukkan bahwa kelompok …",
+        "options": [
+          "Baru dibentuk",
+          "Sudah efektif bekerja mencapai tujuan",
+          "Sedang mengalami konflik",
+          "Dibubarkan"
+        ],
+        "correctAnswer": "Sudah efektif bekerja mencapai tujuan"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Pemimpin yang mampu memengaruhi anggota kelompok termasuk unsur …",
+        "options": ["Struktur", "Norma", "Kepemimpinan", "Tujuan"],
+        "correctAnswer": "Kepemimpinan"
       }
     ]
   },
   "bab2": {
     "id": "bab2",
+    "password": "123",
     "title": "BAB 2: Permasalahan Sosial",
     "questions": [
       {
         "type": "BENAR_SALAH",
-        "questionText": "Suatu kondisi dianggap sebagai permasalahan sosial jika sesuai dengan nilai dan norma yang berlaku di masyarakat.",
-        "correctAnswer": false
-      },
-      {
-        "type": "ABCD",
-        "questionText": "Manakah dari berikut ini yang merupakan contoh permasalahan sosial akibat pengelompokan sosial?",
-        "options": [
-          "Bencana alam",
-          "Intoleransi",
-          "Wabah penyakit",
-          "Perubahan cuaca"
-        ],
-        "correctAnswer": "Intoleransi"
+        "questionText": "Fanatisme kelompok dapat memperparah konflik sosial",
+        "correctAnswer": true,
+        "image": "fanatisme"
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Prasangka negatif dan diskriminasi dapat menjadi akar dari permasalahan sosial yang mengancam kerukunan.",
-        "correctAnswer": true
-      },
-      {
-        "type": "ABCD",
-        "questionText": "Strategi politik penjajah Belanda untuk memecah belah kelompok di Nusantara dikenal sebagai...",
-        "options": [
-          "Laissez-faire",
-          "Devide et Impera",
-          "Inklusi Sosial",
-          "Peacebuilding"
-        ],
-        "correctAnswer": "Devide et Impera"
+        "questionText": "Sikap etnosentris termasuk dampak negatif pengelompokan sosial",
+        "correctAnswer": true,
+        "image": "etnosentris"
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Korupsi, Kolusi, dan Nepotisme (KKN) adalah salah satu dampak positif dari pengelompokan sosial.",
-        "correctAnswer": false
+        "questionText": "Pengelompokan berdasarkan ekonomi dapat menyebabkan kesenjangan sosial",
+        "correctAnswer": true,
+        "image": "kesenjangan_sosial"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Labeling tidak termasuk masalah sosial akibat pengelompokan sosial",
+        "correctAnswer": false,
+        "image": "labeling"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Segregasi sosial dapat menghambat integrasi masyarakat",
+        "correctAnswer": true,
+        "image": "segregasi"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Permasalahan sosial terjadi ketika suatu kondisi dianggap melanggar nilai dan norma sehingga menimbulkan…",
+        "options": [
+          "Solidaritas",
+          "Keresahan sosial",
+          "Perubahan budaya",
+          "Integrasi sosial"
+        ],
+        "correctAnswer": "Keresahan sosial"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Salah satu faktor munculnya permasalahan sosial adalah…",
+        "options": [
+          "Peningkatan kreativitas",
+          "Pelanggaran nilai dan norma",
+          "Kerja sama antar kelompok",
+          "Mobilitas sosial"
+        ],
+        "correctAnswer": "Pelanggaran nilai dan norma"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Pengelompokan sosial dapat menimbulkan masalah sosial apabila disertai dengan…",
+        "options": [
+          "Toleransi",
+          "Empati",
+          "Prasangka dan eksklusivisme",
+          "Kerja sama"
+        ],
+        "correctAnswer": "Prasangka dan eksklusivisme"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Contoh permasalahan sosial akibat pengelompokan sosial adalah…",
+        "options": [
+          "Meningkatnya minat belajar",
+          "Kesenjangan gender dan ekonomi",
+          "Perkembangan kebudayaan",
+          "Terciptanya harmoni sosial"
+        ],
+        "correctAnswer": "Kesenjangan gender dan ekonomi"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Diskriminasi muncul ketika sebuah kelompok merasa…",
+        "options": [
+          "Setara dengan kelompok lain",
+          "Lebih unggul dari kelompok lain",
+          "Terlibat dalam kerja sama",
+          "Terbuka terhadap perbedaan"
+        ],
+        "correctAnswer": "Lebih unggul dari kelompok lain"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Strategi 'devide et impera' pada masa VOC bertujuan untuk…",
+        "options": [
+          "Menyatukan kelompok masyarakat",
+          "Memperkuat rasa nasionalisme",
+          "Memecah kelompok agar mudah dikuasai",
+          "Memberikan pendidikan merata"
+        ],
+        "correctAnswer": "Memecah kelompok agar mudah dikuasai"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Korupsi, kolusi, dan nepotisme merupakan contoh permasalahan sosial yang berkaitan dengan…",
+        "options": [
+          "Keadilan sosial",
+          "Penyalahgunaan kekuasaan",
+          "Integrasi nasional",
+          "Mobilitas sosial"
+        ],
+        "correctAnswer": "Penyalahgunaan kekuasaan"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Penyelesaian permasalahan sosial akibat pengelompokan sosial dapat dilakukan dengan cara…",
+        "options": [
+          "Meningkatkan sikap tertutup",
+          "Menghindari interaksi antar kelompok",
+          "Mengembangkan sikap toleransi dan empati",
+          "Menonjolkan perbedaan status sosial"
+        ],
+        "correctAnswer": "Mengembangkan sikap toleransi dan empati"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Penelitian sosial penting dilakukan untuk…",
+        "options": [
+          "Menambah konflik antar kelompok",
+          "Menemukan solusi yang tepat dan ilmiah",
+          "Memperkuat prasangka sosial",
+          "Mengurangi interaksi sosial"
+        ],
+        "correctAnswer": "Menemukan solusi yang tepat dan ilmiah"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Dampak utama ketika pengelompokan sosial disertai prasangka dan diskriminasi adalah…",
+        "options": [
+          "Menguatnya solidaritas sosial",
+          "Munculnya konflik dan ketidakadilan",
+          "Berkurangnya kesenjangan sosial",
+          "Terbentuknya masyarakat harmonis"
+        ],
+        "correctAnswer": "Munculnya konflik dan ketidakadilan"
       }
     ]
   },
   "bab3": {
     "id": "bab3",
+    "password": "123",
     "title": "BAB 3: Konflik Sosial",
     "questions": [
       {
         "type": "BENAR_SALAH",
-        "questionText": "Konflik berasal dari kata Latin 'conflictus' yang berarti 'benturan'.",
-        "correctAnswer": true
+        "questionText": "Keadaan pada gambar disebut konflik sosial.",
+        "correctAnswer": false,
+        "image": "tidak_ada_perdebatan"
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Setiap konflik sosial yang terjadi di masyarakat pasti akan selalu berakhir dengan kekerasan fisik.",
-        "correctAnswer": false
-      },
-      {
-        "type": "ABCD",
-        "questionText": "Konflik antara dua kelompok yang memiliki kedudukan sejajar (misal: antarsuporter tim sepak bola) disebut...",
-        "options": [
-          "Konflik Vertikal",
-          "Konflik Horizontal",
-          "Konflik Konstruktif",
-          "Konflik Intrapersonal"
-        ],
-        "correctAnswer": "Konflik Horizontal"
-      },
-      {
-        "type": "ABCD",
-        "questionText": "Upaya penyelesaian konflik dengan bantuan pihak ketiga yang keputusannya TIDAK mengikat kedua belah pihak disebut...",
-        "options": ["Arbitrase", "Adjudikasi", "Mediasi", "Transformasi"],
-        "correctAnswer": "Mediasi"
+        "questionText": "Konflik kompetisi biasanya muncul saat dua pihak ingin mengungguli satu sama lain",
+        "correctAnswer": true,
+        "image": "kompetisi"
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Salah satu dampak positif dari konflik adalah dapat memperkuat solidaritas internal dalam suatu kelompok.",
-        "correctAnswer": true
+        "questionText": "Konflik antar generasi terjadi karena perbedaan nilai dan cara pandang",
+        "correctAnswer": true,
+        "image": "antar_generasi"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Dua siswa akhirnya berdamai setelah dimediasi guru BK",
+        "correctAnswer": true,
+        "image": "berdamai"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Situasi tersebut tidak termasuk konflik karena tidak ada perdebatan terbuka",
+        "correctAnswer": false,
+        "image": "tidak_ada_konflik"
       },
       {
         "type": "ABCD",
-        "questionText": "Alat analisis konflik yang memetakan 'Sikap', 'Perilaku', dan 'Kontradiksi' dari pihak yang berkonflik adalah...",
+        "questionText": "Konflik sosial adalah…",
         "options": [
-          "Pohon Konflik",
-          "Segitiga SPK",
-          "Peta Konflik",
-          "Analisis SWOT"
+          "Proses kerja sama untuk mencapai tujuan bersama",
+          "Benturan kepentingan antara dua pihak atau lebih",
+          "Cara masyarakat berinteraksi secara harmonis",
+          "Pertemuan budaya yang menghasilkan integrasi"
         ],
-        "correctAnswer": "Segitiga SPK"
+        "correctAnswer": "Benturan kepentingan antara dua pihak atau lebih"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Konflik dapat muncul karena perbedaan…",
+        "options": [
+          "Bahasa daerah",
+          "Hobi",
+          "Nilai, kepentingan, dan tujuan",
+          "Model pakaian"
+        ],
+        "correctAnswer": "Nilai, kepentingan, dan tujuan"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Menurut UU No. 7 Tahun 2012, berikut ini merupakan penyebab konflik, kecuali…",
+        "options": [
+          "Diskriminasi",
+          "Kesalahpahaman",
+          "Kesenjangan sosial",
+          "Kerja sama antar kelompok"
+        ],
+        "correctAnswer": "Kerja sama antar kelompok"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Konflik interpersonal termasuk konflik yang terjadi antara…",
+        "options": [
+          "Individu dan kelompok",
+          "Individu dengan dirinya sendiri",
+          "Dua individu",
+          "Dua masyarakat berbeda negara"
+        ],
+        "correctAnswer": "Dua individu"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Konflik destruktif adalah konflik yang…",
+        "options": [
+          "Menimbulkan perubahan positif",
+          "Menghasilkan norma baru",
+          "Merusak dan memperparah perpecahan",
+          "Memperkuat solidaritas kelompok"
+        ],
+        "correctAnswer": "Merusak dan memperparah perpecahan"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Bentuk konflik vertikal ditandai dengan…",
+        "options": [
+          "Pihak yang berkedudukan sejajar",
+          "Pihak yang berbeda kedudukan",
+          "Konflik antar suku",
+          "Konflik antar negara"
+        ],
+        "correctAnswer": "Pihak yang berbeda kedudukan"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Hubungan konflik dan kekerasan adalah…",
+        "options": [
+          "Semua konflik pasti berakhir dengan kekerasan",
+          "Kekerasan tidak ada hubungannya dengan konflik",
+          "Kekerasan terjadi karena konflik yang tidak terselesaikan",
+          "Konflik muncul setelah terjadi kekerasan"
+        ],
+        "correctAnswer": "Kekerasan terjadi karena konflik yang tidak terselesaikan"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Tahapan penyelesaian konflik yang bertujuan mengendalikan intensitas dan dampak konflik adalah…",
+        "options": [
+          "Transformasi konflik",
+          "Manajemen konflik",
+          "Resolusi konflik",
+          "Peacebuilding"
+        ],
+        "correctAnswer": "Manajemen konflik"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Transformasi konflik dilakukan dengan cara…",
+        "options": [
+          "Menghindari dialog",
+          "Mengubah konflik menjadi peluang kerja sama",
+          "Memisahkan pihak yang bertikai",
+          "Membiarkan konflik mereda dengan sendirinya"
+        ],
+        "correctAnswer": "Mengubah konflik menjadi peluang kerja sama"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Dalam penelitian konflik, segitiga SPK digunakan untuk menganalisis…",
+        "options": [
+          "Struktur masyarakat",
+          "Sikap, perilaku, dan kontradiksi pihak terlibat",
+          "Perkembangan ekonomi",
+          "Kekuatan militer"
+        ],
+        "correctAnswer": "Sikap, perilaku, dan kontradiksi pihak terlibat"
       }
     ]
   },
   "bab4": {
     "id": "bab4",
+    "password": "123",
     "title": "BAB 4: Harmoni Sosial",
     "questions": [
       {
         "type": "BENAR_SALAH",
-        "questionText": "Harmoni sosial adalah proses menciptakan kehidupan yang rukun, damai, dan seimbang di tengah perbedaan.",
-        "correctAnswer": true
-      },
-      {
-        "type": "ABCD",
-        "questionText": "Prinsip yang menekankan pada rasa saling memiliki, saling percaya, dan solidaritas antaranggota masyarakat disebut...",
-        "options": [
-          "Inklusi Sosial",
-          "Integrasi Sosial",
-          "Kohesi Sosial",
-          "Partisipasi Sosial"
-        ],
-        "correctAnswer": "Kohesi Sosial"
-      },
-      {
-        "type": "ABCD",
-        "questionText": "Upaya memberi kesempatan dan akses yang sama kepada semua orang, termasuk kelompok rentan, disebut...",
-        "options": [
-          "Inklusi Sosial",
-          "Integrasi Sosial",
-          "Kohesi Sosial",
-          "Harmoni Sosial"
-        ],
-        "correctAnswer": "Inklusi Sosial"
+        "questionText": "Kerjasama merupakan bentuk hubungan sosial asosiatif",
+        "correctAnswer": true,
+        "image": "kerjasama"
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Mengadakan musyawarah atau audiensi publik adalah contoh upaya membangun harmoni dalam bentuk 'Menginformasikan'.",
-        "correctAnswer": false
-      },
-      {
-        "type": "ABCD",
-        "questionText": "Analisis untuk mengetahui Kekuatan, Kelemahan, Peluang, dan Ancaman dalam merencanakan aksi sosial disebut...",
-        "options": [
-          "Analisis SPK",
-          "Analisis SWOT",
-          "Analisis Kohesi",
-          "Analisis Inklusi"
-        ],
-        "correctAnswer": "Analisis SWOT"
+        "questionText": "Asimilasi berarti memaksa satu pihak meninggalkan budayanya demi persamaan",
+        "correctAnswer": false,
+        "image": "asimilasi"
       },
       {
         "type": "BENAR_SALAH",
-        "questionText": "Filantropi sosial adalah kegiatan menyebarkan pesan edukatif melalui media sosial untuk menumbuhkan kesadaran.",
-        "correctAnswer": false
+        "questionText": "Arbitrasi adalah penyelesaian konflik melalui pihak ketiga yang memiliki wewenang memutuskan",
+        "correctAnswer": true,
+        "image": "arbitrasi"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Toleransi berarti menghindari konflik dengan mengalah total pada pihak lain",
+        "correctAnswer": false,
+        "image": "toleransi"
+      },
+      {
+        "type": "BENAR_SALAH",
+        "questionText": "Kegiatan lintas budaya membantu memperkuat integrasi sosial",
+        "correctAnswer": true,
+        "image": "budaya"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Harmoni sosial terjadi ketika masyarakat mampu…",
+        "options": [
+          "Bersaing secara bebas",
+          "Saling menghargai dan bekerja sama",
+          "Menonjolkan perbedaan kelompok",
+          "Mengutamakan kepentingan pribadi"
+        ],
+        "correctAnswer": "Saling menghargai dan bekerja sama"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Integrasi sosial berarti…",
+        "options": [
+          "Memisahkan kelompok yang berbeda",
+          "Proses penyatuan unsur masyarakat yang beragam",
+          "Menonjolkan identitas kelompok tertentu",
+          "Menghindari pertemuan antarbudaya"
+        ],
+        "correctAnswer": "Proses penyatuan unsur masyarakat yang beragam"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Inklusi sosial berfokus pada…",
+        "options": [
+          "Memberi akses sama kepada seluruh anggota masyarakat",
+          "Mengutamakan kelompok mayoritas",
+          "Membatasi kelompok rentan",
+          "Menghilangkan keragaman budaya"
+        ],
+        "correctAnswer": "Memberi akses sama kepada seluruh anggota masyarakat"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Kohesi sosial ditandai oleh adanya…",
+        "options": [
+          "Sikap saling curiga",
+          "Solidaritas dan rasa saling percaya",
+          "Prasangka antar kelompok",
+          "Kompetisi tidak sehat"
+        ],
+        "correctAnswer": "Solidaritas dan rasa saling percaya"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Salah satu bentuk partisipasi masyarakat dalam membangun harmoni sosial melalui penyebaran pesan edukatif adalah…",
+        "options": [
+          "Filantropi sosial",
+          "Kampanye sosial",
+          "Audiensi publik",
+          "Kolaborasi lembaga"
+        ],
+        "correctAnswer": "Kampanye sosial"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Kegiatan audiensi publik dilakukan dengan tujuan…",
+        "options": [
+          "Memberikan bantuan materi",
+          "Menampung pendapat dan masukan masyarakat",
+          "Menutup akses informasi masyarakat",
+          "Menghilangkan perbedaan aspirasi"
+        ],
+        "correctAnswer": "Menampung pendapat dan masukan masyarakat"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Contoh konkret kolaborasi dalam membangun harmoni sosial adalah…",
+        "options": [
+          "Menjadi relawan kegiatan sosial",
+          "Menghindari interaksi dengan kelompok lain",
+          "Membuat grup khusus yang eksklusif",
+          "Menghambat kegiatan sosial masyarakat"
+        ],
+        "correctAnswer": "Menjadi relawan kegiatan sosial"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Langkah pertama dalam merancang aksi sosial adalah…",
+        "options": [
+          "Mengevaluasi kegiatan",
+          "Menentukan rekomendasi",
+          "Mengidentifikasi masalah sosial",
+          "Membuat laporan"
+        ],
+        "correctAnswer": "Mengidentifikasi masalah sosial"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Analisis SWOT dalam perencanaan aksi sosial digunakan untuk mengetahui…",
+        "options": [
+          "Struktur pemerintahan",
+          "Kekuatan, kelemahan, peluang, dan ancaman",
+          "Jumlah kelompok masyarakat",
+          "Faktor ekonomi nasional"
+        ],
+        "correctAnswer": "Kekuatan, kelemahan, peluang, dan ancaman"
+      },
+      {
+        "type": "ABCD",
+        "questionText": "Evaluasi aksi sosial dilakukan untuk…",
+        "options": [
+          "Memperbesar konflik",
+          "Menilai keberhasilan dan hambatan aksi",
+          "Mengurangi partisipasi masyarakat",
+          "Menghilangkan laporan kegiatan"
+        ],
+        "correctAnswer": "Menilai keberhasilan dan hambatan aksi"
       }
     ]
   }

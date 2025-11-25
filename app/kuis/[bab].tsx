@@ -1,334 +1,470 @@
 // Di dalam file: app/kuis/[bab].tsx
-// (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
 
+import { CulaCharacter } from "@/app/components/CulaCharacter";
+import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
-import { QuizQuestion } from "@/app/types/gameTypes"; // Hapus CulaPhase
-import { router, Stack, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import quizData from "@/app/data/quizData.json";
+import { QuizImages } from "@/app/utils/quizAssets"; // <-- Import Mapping Aset Baru
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
   Alert,
   Image,
-  Platform,
+  Modal,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
-  ScrollView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import AllQuizData from "@/app/data/quizData.json";
-import { ActivityIndicator } from "react-native";
 
-type Answer = string | boolean | null;
+type QuizDataKeys = keyof typeof quizData;
 
 export default function KuisScreen() {
-  const { state, dispatch } = useGameContext();
-  const { bab } = useLocalSearchParams<{ bab: keyof typeof AllQuizData }>();
+  const { bab } = useLocalSearchParams<{ bab: string }>();
+  const router = useRouter();
+  const { dispatch } = useGameContext();
 
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  // --- STATE ---
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Answer[]>([]);
-  const [selectedAnswer, setSelectedAnswer] = useState<Answer>(null);
-  const [quizStarted, setQuizStarted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
 
-  // (useEffect untuk Muat Soal tetap sama)
-  useEffect(() => {
-    if (bab && AllQuizData[bab]) {
-      const babQuestions = AllQuizData[bab].questions as QuizQuestion[];
-      if (babQuestions.length === 0) {
-        Alert.alert("Segera Hadir", "Kuis untuk bab ini belum tersedia.", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
-        return;
-      }
+  // State Password
+  const [isLocked, setIsLocked] = useState(true);
+  const [inputPassword, setInputPassword] = useState("");
 
-      setQuestions(babQuestions);
-      setAnswers(new Array(babQuestions.length).fill(null));
+  // Load Data
+  const babKey = bab as QuizDataKeys;
+  const selectedBab = bab && quizData[babKey] ? quizData[babKey] : null;
 
-      dispatch({ type: "START_KUIS" });
-      setQuizStarted(true);
+  if (!selectedBab) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>Data kuis tidak ditemukan.</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={{ color: "blue", marginTop: 10 }}>Kembali</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // --- LOGIKA PASSWORD ---
+  const handleCheckPassword = () => {
+    const correctPassword = (selectedBab as any).password || "123";
+    if (inputPassword.toUpperCase() === correctPassword.toUpperCase()) {
+      setIsLocked(false);
     } else {
-      if (!bab) {
-        Alert.alert("Error", "Bab kuis tidak ditemukan (ID Bab kosong).", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
-      }
-    }
-  }, [bab]);
-
-  // (useEffect untuk 'beforeRemove' tetap sama)
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-    interface NavigationEvent {
-      preventDefault: () => void;
-      [key: string]: unknown;
-    }
-    type RouterCallback = (e: NavigationEvent) => void;
-    const listener: RouterCallback = (e) => {
-      if (!quizStarted) return;
-      e.preventDefault();
       Alert.alert(
-        "Keluar Kuis?",
-        "Energi akan tetap terpotong dan progres kuis ini akan hilang. Anda yakin?",
-        [
-          { text: "Batal", style: "cancel", onPress: () => {} },
-          {
-            text: "Ya, Keluar",
-            style: "destructive",
-            onPress: () => {
-              setQuizStarted(false);
-              router.back();
-            },
-          },
-        ]
+        "Password Salah",
+        "Silakan tanya gurumu untuk password yang benar!"
       );
-    };
-    const unsubscribe = (router as any).addListener?.("beforeRemove", listener);
-    return () => {
-      if (typeof unsubscribe === "function") unsubscribe();
-    };
-  }, [router, quizStarted]);
-
-  // (handleSelectAnswer tetap sama)
-  const handleSelectAnswer = (answer: Answer) => {
-    setSelectedAnswer(answer);
-  };
-
-  // (handleNextQuestion tetap sama)
-  const handleNextQuestion = () => {
-    const newAnswers = [...answers];
-    newAnswers[currentQuestionIndex] = selectedAnswer;
-    setAnswers(newAnswers);
-
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setSelectedAnswer(null);
-    } else {
-      handleSubmitKuis(newAnswers);
+      setInputPassword("");
     }
   };
 
-  // --- PERBAIKAN UTAMA DI FUNGSI INI ---
-  const handleSubmitKuis = (finalAnswers: Answer[]) => {
-    // Guard clause (Tetap dipertahankan, ini bagus)
-    if (typeof bab !== "string" || !AllQuizData[bab]) {
-      Alert.alert("Error Kritis", "Gagal menyimpan kuis: ID Bab tidak valid.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
-      return;
+  const handleCancelPassword = () => {
+    router.back();
+  };
+
+  // --- LOGIKA JAWAB ---
+  const handleAnswer = (isCorrect: boolean) => {
+    let point = 0;
+    if (isCorrect) {
+      point = 1;
+      setScore(score + 1);
     }
 
-    let score = 0;
-    questions.forEach((q, index) => {
-      if (finalAnswers[index] === q.correctAnswer) {
-        score++;
-      }
-    });
-
-    // Kirim hasil ke Context. Context yang akan mengurus logika 0 XP.
-    dispatch({ type: "SUBMIT_KUIS", payload: { babId: bab, score } });
-
-    // --- LOGIKA 0 XP DIHAPUS DARI SINI ---
-    // (Objek babPhaseMap dan phaseOrder dihapus)
-
-    // Langsung tampilkan Alert.
-    // Pesan XP kita sederhanakan, karena kita tidak tahu
-    // berapa XP yang didapat (Context yang tahu).
     Alert.alert(
-      "Kuis Selesai!",
-      `Skor Anda: ${score} / ${questions.length}`, // Pesan disederhanakan
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            setQuizStarted(false);
-            router.back();
-          },
-        },
-      ]
+      isCorrect ? "Benar! 🎉" : "Kurang Tepat 😅",
+      isCorrect ? "Jawabanmu tepat." : "Jangan menyerah!",
+      [{ text: "Lanjut", onPress: () => nextQuestion() }]
     );
   };
 
-  // --- RENDER (Tetap sama) ---
-  if (questions.length === 0) {
-    return bab ? (
-      <ActivityIndicator style={{ flex: 1, backgroundColor: "#E6F4FE" }} />
-    ) : null;
-  }
-  const currentQuestion = questions[currentQuestionIndex];
+  const nextQuestion = () => {
+    if (currentQuestionIndex < selectedBab.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      finishQuiz();
+    }
+  };
+
+  const finishQuiz = () => {
+    setIsFinished(true);
+    dispatch({
+      type: "SUBMIT_KUIS",
+      payload: {
+        babId: selectedBab.id,
+        score: score,
+      },
+    });
+  };
+
+  const currentQuestion = selectedBab.questions[currentQuestionIndex];
+
+  // --- LOGIKA GAMBAR SOAL ---
+  // Cek apakah ada properti 'image' di JSON dan apakah ada di mapping QuizImages
+  const questionImageSource =
+    "image" in currentQuestion && currentQuestion.image
+      ? (QuizImages as any)[currentQuestion.image]
+      : null;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.quizHeader}>
-        <Text style={styles.headerText}>Kuis {AllQuizData[bab].title}</Text>
-        <Text style={styles.headerText}>
-          Soal {currentQuestionIndex + 1} / {questions.length}
-        </Text>
-      </View>
-
-      <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
+    <GameHUDLayout
+      backgroundImage={require("@/assets/images/kelas_bg.png")}
+      onPressNavLeft={() => router.back()}
+      onPressNavRight={() => {}}
+      middleNavButton={{
+        onPress: () => {},
+        icon: <Ionicons name="school" size={24} color="white" />,
+        text: "Kuis",
+      }}
+      pageModal={null}
+    >
+      {/* --- MODAL PASSWORD --- */}
+      <Modal
+        visible={isLocked}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCancelPassword}
       >
-        <View style={styles.questionContainer}>
-          {currentQuestion.image && (
-            <Image
-              source={require("@/assets/images/cula_character.png")}
-              style={styles.questionImage}
+        <BlurView intensity={20} style={styles.modalOverlay}>
+          <View style={styles.passwordContainer}>
+            <Text style={styles.passwordTitle}>🔒 Kuis Terkunci</Text>
+            <Text style={styles.passwordSubtitle}>
+              Masukkan password dari gurumu untuk memulai kuis "
+              {selectedBab.title}".
+            </Text>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password..."
+              placeholderTextColor="#888"
+              value={inputPassword}
+              onChangeText={setInputPassword}
+              secureTextEntry={false}
+              autoCapitalize="characters"
             />
-          )}
-          <Text style={styles.questionText}>
-            {currentQuestion.questionText}
-          </Text>
+            <View style={styles.passwordButtonRow}>
+              <TouchableOpacity
+                style={[styles.passwordButton, styles.btnCancel]}
+                onPress={handleCancelPassword}
+              >
+                <Text style={styles.btnText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.passwordButton, styles.btnConfirm]}
+                onPress={handleCheckPassword}
+              >
+                <Text style={styles.btnText}>Mulai</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </BlurView>
+      </Modal>
+
+      {/* --- KONTEN KUIS --- */}
+      {!isLocked && (
+        <View style={styles.quizContainer}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.questionCounter}>
+              Soal {currentQuestionIndex + 1} / {selectedBab.questions.length}
+            </Text>
+            <Text style={styles.scoreText}>Benar: {score}</Text>
+          </View>
+
+          {/* KARTU PERTANYAAN */}
+          <View style={styles.questionCard}>
+            {/* Tampilkan Gambar Soal Jika Ada */}
+            {questionImageSource ? (
+              <Image
+                source={questionImageSource}
+                style={styles.questionImage}
+                resizeMode="contain"
+              />
+            ) : (
+              // Jika tidak ada gambar soal, tampilkan Si Cula (opsional)
+              <CulaCharacter style={styles.hostImage} />
+            )}
+
+            <Text style={styles.questionText}>
+              {currentQuestion.questionText}
+            </Text>
+          </View>
+
+          {/* Opsi Jawaban */}
+          <View style={styles.optionsContainer}>
+            {currentQuestion.type === "BENAR_SALAH" && (
+              <View style={styles.benarSalahRow}>
+                <TouchableOpacity
+                  style={[styles.optionButton, styles.benarButton]}
+                  onPress={() =>
+                    handleAnswer(currentQuestion.correctAnswer === true)
+                  }
+                >
+                  <Text style={styles.optionText}>BENAR</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.optionButton, styles.salahButton]}
+                  onPress={() =>
+                    handleAnswer(currentQuestion.correctAnswer === false)
+                  }
+                >
+                  <Text style={styles.optionText}>SALAH</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {currentQuestion.type === "ABCD" &&
+              currentQuestion.options?.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.optionButton}
+                  onPress={() =>
+                    handleAnswer(option === currentQuestion.correctAnswer)
+                  }
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+          </View>
         </View>
+      )}
 
-        <View style={styles.optionsContainer}>
-          {currentQuestion.type === "BENAR_SALAH" && (
-            <>
-              <TouchableOpacity
-                style={[
-                  styles.optionButton,
-                  selectedAnswer === true && styles.optionSelected,
-                ]}
-                onPress={() => handleSelectAnswer(true)}
-              >
-                <Text style={styles.optionText}>Benar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.optionButton,
-                  selectedAnswer === false && styles.optionSelected,
-                ]}
-                onPress={() => handleSelectAnswer(false)}
-              >
-                <Text style={styles.optionText}>Salah</Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          {currentQuestion.type === "ABCD" &&
-            currentQuestion.options?.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  selectedAnswer === option && styles.optionSelected,
-                ]}
-                onPress={() => handleSelectAnswer(option)}
-              >
-                <Text style={styles.optionText}>{option}</Text>
-              </TouchableOpacity>
-            ))}
+      {/* --- MODAL HASIL --- */}
+      <Modal visible={isFinished} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.resultCard}>
+            <Text style={styles.resultTitle}>Kuis Selesai!</Text>
+            <Text style={styles.resultSubtitle}>
+              Kamu menjawab {score} dari {selectedBab.questions.length} soal
+              dengan benar.
+            </Text>
+            <TouchableOpacity
+              style={styles.finishButton}
+              onPress={() => {
+                setIsFinished(false);
+                router.replace("/kelas");
+              }}
+            >
+              <Text style={styles.finishButtonText}>Kembali ke Kelas</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.nextButton,
-            selectedAnswer === null && styles.disabledButton,
-          ]}
-          onPress={handleNextQuestion}
-          disabled={selectedAnswer === null}
-        >
-          <Text style={styles.nextButtonText}>
-            {currentQuestionIndex === questions.length - 1
-              ? "Selesai"
-              : "Lanjut"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </Modal>
+    </GameHUDLayout>
   );
 }
 
-// --- STYLES (Tidak berubah) ---
 const styles = StyleSheet.create({
-  container: {
+  centerContainer: {
     flex: 1,
-    backgroundColor: "#E6F4FE",
-  },
-  quizHeader: {
-    padding: 20,
-    paddingTop: Platform.OS === "web" ? 20 : 0,
-    paddingBottom: 10,
-  },
-  headerText: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#003366",
-    textAlign: "center",
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingTop: 10,
-  },
-  questionContainer: {
-    backgroundColor: "white",
-    borderRadius: 15,
-    padding: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
-    minHeight: 150,
   },
-  questionImage: {
-    width: 150,
-    height: 150,
-    resizeMode: "contain",
+  quizContainer: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+    paddingBottom: 100,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 20,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    padding: 15,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: "#4A2A00",
+  },
+  questionCounter: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4A2A00",
+  },
+  scoreText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#28a745",
+  },
+  questionCard: {
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    alignItems: "center",
+    minHeight: 150,
+    borderWidth: 4,
+    borderColor: "#4A2A00",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  // Style Baru untuk Gambar Soal
+  questionImage: {
+    width: "100%",
+    height: 200, // Tinggi fix agar rapi
+    marginBottom: 15,
+    borderRadius: 10,
+    backgroundColor: "#f0f0f0", // Placeholder color saat loading
+  },
+  hostImage: {
+    width: 80,
+    height: 80,
+    marginBottom: 10,
   },
   questionText: {
     fontSize: 18,
-    fontWeight: "500",
     textAlign: "center",
+    color: "#4A2A00",
+    fontWeight: "bold",
+    lineHeight: 24,
   },
   optionsContainer: {
-    justifyContent: "center",
+    width: "100%",
   },
   optionButton: {
-    backgroundColor: "white",
+    backgroundColor: "#FFB347",
     padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: "#8A2BE2",
-    cursor: "pointer",
+    borderRadius: 15,
+    marginBottom: 12,
+    borderWidth: 3,
+    borderColor: "#4A2A00",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
-  optionSelected: {
-    backgroundColor: "#D8BFD8",
-    borderColor: "#4B0082",
+  // Layout khusus Benar/Salah
+  benarSalahRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  benarButton: {
+    flex: 1,
+    backgroundColor: "#4ECDC4", // Hijau Tosca
+    borderColor: "#00796B",
+  },
+  salahButton: {
+    flex: 1,
+    backgroundColor: "#FF6B6B", // Merah Muda
+    borderColor: "#B71C1C",
   },
   optionText: {
     fontSize: 16,
+    color: "#4A2A00", // Ubah ke Putih jika background gelap
+    fontWeight: "bold",
+  },
+  // ... (Styles Password & Result sama seperti sebelumnya)
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  resultCard: {
+    backgroundColor: "#FFF8E7",
+    padding: 30,
+    borderRadius: 25,
+    alignItems: "center",
+    elevation: 10,
+    width: "85%",
+    borderWidth: 5,
+    borderColor: "#4A2A00",
+  },
+  resultTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#4A2A00",
+  },
+  resultSubtitle: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 25,
+  },
+  finishButton: {
+    backgroundColor: "#8A2BE2",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: "#4B0082",
+  },
+  finishButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  passwordContainer: {
+    width: "85%",
+    backgroundColor: "#FFF8E7",
+    borderRadius: 20,
+    padding: 25,
+    alignItems: "center",
+    borderWidth: 4,
+    borderColor: "#8B4513",
+    elevation: 10,
+  },
+  passwordTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#8B4513",
+    marginBottom: 10,
+  },
+  passwordSubtitle: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  passwordInput: {
+    width: "100%",
+    backgroundColor: "white",
+    borderWidth: 2,
+    borderColor: "#CCC",
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 20,
     fontWeight: "bold",
     color: "#333",
   },
-  footer: {
-    padding: 20,
-    paddingTop: 10,
+  passwordButtonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
   },
-  nextButton: {
-    backgroundColor: "#8A2BE2",
-    padding: 15,
-    borderRadius: 15,
+  passwordButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: "center",
-    borderBottomWidth: 4,
-    borderColor: "#4B0082",
-    cursor: "pointer",
+    marginHorizontal: 5,
+    borderBottomWidth: 3,
   },
-  nextButtonText: {
+  btnCancel: {
+    backgroundColor: "#FF6B6B",
+    borderColor: "#B71C1C",
+  },
+  btnConfirm: {
+    backgroundColor: "#4ECDC4",
+    borderColor: "#00796B",
+  },
+  btnText: {
     color: "white",
-    fontSize: 18,
     fontWeight: "bold",
-  },
-  disabledButton: {
-    backgroundColor: "#AAA",
-    borderColor: "#777",
-    opacity: 0.7,
+    fontSize: 16,
   },
 });

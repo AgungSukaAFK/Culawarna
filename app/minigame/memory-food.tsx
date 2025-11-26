@@ -1,13 +1,14 @@
 // Di dalam file: app/minigame/memory-food.tsx
-// (BUAT FILE BARU INI)
 
 import { useGameContext } from "@/app/context/GameContext";
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   ImageBackground,
+  ImageSourcePropType,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,31 +16,41 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// --- TIPE & DATA UNTUK MINIGAME ---
+// --- 1. MAPPING ASET MAKANAN KHAS BANTEN ---
+// Mengambil langsung dari folder assets/images/foods/
+const foodAssets: { [key: string]: ImageSourcePropType } = {
+  pecakbandeng: require("@/assets/images/foods/pecakbandeng.png"),
+  rabeg: require("@/assets/images/foods/rabeg.png"),
+  emping: require("@/assets/images/foods/emping.png"),
+  bintul: require("@/assets/images/foods/bintul.png"), // Ketan Bintul
+  gipang: require("@/assets/images/foods/gipang.png"),
+  bugis: require("@/assets/images/foods/bugis.png"),
+};
+
+// --- TIPE DATA ---
 interface Card {
   id: number;
   foodId: string;
-  icon: React.ComponentProps<typeof FontAwesome5>["name"];
+  image: ImageSourcePropType;
   isFlipped: boolean;
   isMatched: boolean;
 }
 
-const GAME_FOODS: Array<{
-  foodId: string;
-  icon: React.ComponentProps<typeof FontAwesome5>["name"];
-}> = [
-  { foodId: "sate-bandeng", icon: "fish" },
-  { foodId: "nasi-uduk", icon: "cloud-meatball" },
-  { foodId: "placeholder1", icon: "drumstick-bite" },
-  { foodId: "placeholder2", icon: "carrot" },
-  { foodId: "placeholder3", icon: "apple-alt" },
-  { foodId: "placeholder4", icon: "cookie" },
+// --- KONFIGURASI LEVEL ---
+// Kita gunakan 6 pasang (Total 12 kartu) untuk grid 4x3
+const GAME_ITEMS = [
+  { foodId: "pecakbandeng", image: foodAssets.pecakbandeng },
+  { foodId: "rabeg", image: foodAssets.rabeg },
+  { foodId: "emping", image: foodAssets.emping },
+  { foodId: "bintul", image: foodAssets.bintul },
+  { foodId: "gipang", image: foodAssets.gipang },
+  { foodId: "bugis", image: foodAssets.bugis },
 ];
 
-const KOIN_REWARD = 10;
-const GAME_TIME_SECONDS = 30;
+const KOIN_REWARD = 15; // Reward dinaikkan sedikit karena lebih menantang
+const GAME_TIME_SECONDS = 45; // Waktu bermain
 
-// Fungsi untuk mengacak array
+// Fungsi Acak (Fisher-Yates Shuffle)
 const shuffleArray = (array: any[]) => {
   let currentIndex = array.length,
     randomIndex;
@@ -54,131 +65,123 @@ const shuffleArray = (array: any[]) => {
   return array;
 };
 
-// Fungsi untuk membuat papan permainan
+// Membuat Papan Permainan
 const createGameBoard = (): Card[] => {
-  const pairedFoods = [...GAME_FOODS, ...GAME_FOODS];
+  // Duplikasi item untuk membuat pasangan (pair)
+  const pairedFoods = [...GAME_ITEMS, ...GAME_ITEMS];
   const shuffled = shuffleArray(pairedFoods);
-  return shuffled.map((food, index) => ({
+
+  return shuffled.map((item, index) => ({
     id: index,
-    foodId: food.foodId,
-    icon: food.icon,
+    foodId: item.foodId,
+    image: item.image,
     isFlipped: false,
     isMatched: false,
   }));
 };
 
-// --- KOMPONEN FULL-SCREEN MINIGAME ---
 export default function MemoryFoodScreen() {
   const { dispatch } = useGameContext();
+
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME_SECONDS);
   const [isGameActive, setIsGameActive] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [countdown, setCountdown] = useState<string | number>(3); // <-- STATE BARU
+  const [countdown, setCountdown] = useState<string | number>(3);
 
-  // --- EFEK UNTUK AUDIO & COUNTDOWN ---
+  // --- SETUP AWAL & COUNTDOWN ---
   useEffect(() => {
-    // 1. Set audio minigame aktif
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: true });
 
-    // 2. Mulai Countdown
     const countdownTimer = setInterval(() => {
       setCountdown((prev) => {
-        if (typeof prev === "number" && prev > 1) {
-          return prev - 1;
-        }
-        if (prev === 1) {
-          return "Mulai!";
-        }
-        // Setelah "Mulai!", hentikan interval ini
+        if (typeof prev === "number" && prev > 1) return prev - 1;
+        if (prev === 1) return "Mulai!";
         clearInterval(countdownTimer);
-        startGame(); // <-- Mulai game setelah countdown
-        return ""; // Sembunyikan countdown
+        startGame();
+        return "";
       });
     }, 1000);
 
-    // 3. Cleanup effect (jika user keluar paksa)
     return () => {
       clearInterval(countdownTimer);
       dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
     };
-  }, []); // Hanya berjalan sekali saat layar dimuat
+  }, []);
 
-  // --- EFEK UNTUK TIMER GAME ---
+  // --- TIMER ---
   useEffect(() => {
     if (!isGameActive) return;
-
     if (timeLeft <= 0) {
       setIsGameActive(false);
-      Alert.alert("Waktu Habis!", "Coba lagi nanti.", [
-        { text: "OK", onPress: handleExitGame },
+      Alert.alert("Waktu Habis!", "Yah, waktu memasak habis!", [
+        { text: "Kembali", onPress: handleExitGame },
       ]);
       return;
     }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
+    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [isGameActive, timeLeft]);
 
-  // --- EFEK UNTUK CEK KARTU ---
+  // --- LOGIKA PENCOCOKAN ---
   useEffect(() => {
     if (flippedCards.length === 2) {
       setIsChecking(true);
-      const [firstIndex, secondIndex] = flippedCards;
-      const firstCard = cards[firstIndex];
-      const secondCard = cards[secondIndex];
+      const [idx1, idx2] = flippedCards;
+      const card1 = cards[idx1];
+      const card2 = cards[idx2];
 
-      if (firstCard.foodId === secondCard.foodId) {
-        setCards((prevCards) =>
-          prevCards.map((card) =>
-            card.id === firstCard.id || card.id === secondCard.id
-              ? { ...card, isMatched: true }
-              : card
+      if (card1.foodId === card2.foodId) {
+        // MATCH
+        setCards((prev) =>
+          prev.map((c) =>
+            c.id === card1.id || c.id === card2.id
+              ? { ...c, isMatched: true }
+              : c
           )
         );
         setScore((prev) => prev + 1);
         setFlippedCards([]);
         setIsChecking(false);
       } else {
+        // TIDAK MATCH
         setTimeout(() => {
-          setCards((prevCards) =>
-            prevCards.map((card) =>
-              card.id === firstCard.id || card.id === secondCard.id
-                ? { ...card, isFlipped: false }
-                : card
+          setCards((prev) =>
+            prev.map((c) =>
+              c.id === card1.id || c.id === card2.id
+                ? { ...c, isFlipped: false }
+                : c
             )
           );
           setFlippedCards([]);
           setIsChecking(false);
-        }, 1000);
+        }, 800);
       }
     }
   }, [flippedCards, cards]);
 
-  // --- EFEK UNTUK CEK KEMENANGAN ---
+  // --- CEK KEMENANGAN ---
   useEffect(() => {
-    if (isGameActive && score === GAME_FOODS.length) {
+    if (isGameActive && score === GAME_ITEMS.length) {
       setIsGameActive(false);
       dispatch({ type: "TAMBAH_KOIN", payload: KOIN_REWARD });
-      Alert.alert("Kamu Menang!", `Kamu mendapatkan ${KOIN_REWARD} Koin!`, [
-        { text: "OK", onPress: handleExitGame },
-      ]);
+      Alert.alert(
+        "Luar Biasa!",
+        `Kamu hafal semua menu!\n(+${KOIN_REWARD} Koin)`,
+        [{ text: "Ambil Koin", onPress: handleExitGame }]
+      );
     }
   }, [score, isGameActive]);
 
-  // --- FUNGSI KONTROL GAME ---
   const startGame = () => {
     setCards(createGameBoard());
     setFlippedCards([]);
     setScore(0);
     setTimeLeft(GAME_TIME_SECONDS);
     setIsChecking(false);
-    setIsGameActive(true); // <-- Game baru aktif setelah ini
+    setIsGameActive(true);
   };
 
   const handleCardPress = (index: number) => {
@@ -186,14 +189,13 @@ export default function MemoryFoodScreen() {
       !isGameActive ||
       isChecking ||
       cards[index].isFlipped ||
-      flippedCards.length === 2
+      cards[index].isMatched
     ) {
       return;
     }
-    setCards((prevCards) =>
-      prevCards.map((card, i) =>
-        i === index ? { ...card, isFlipped: true } : card
-      )
+
+    setCards((prev) =>
+      prev.map((c, i) => (i === index ? { ...c, isFlipped: true } : c))
     );
     setFlippedCards((prev) => [...prev, index]);
   };
@@ -209,46 +211,65 @@ export default function MemoryFoodScreen() {
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
-        {/* Tampilkan Countdown Overlay */}
         {countdown ? (
           <View style={styles.countdownOverlay}>
             <Text style={styles.countdownText}>{countdown}</Text>
           </View>
         ) : (
-          /* Tampilkan Game */
           <>
+            {/* HUD */}
             <View style={styles.gameHud}>
-              <Text style={styles.hudText}>Skor: {score}</Text>
-              <Text style={styles.hudText}>Waktu: {timeLeft}d</Text>
+              <View style={styles.hudItem}>
+                <Ionicons name="restaurant" size={24} color="#FFD700" />
+                <Text style={styles.hudText}>
+                  {" "}
+                  {score} / {GAME_ITEMS.length}
+                </Text>
+              </View>
+              <View style={styles.hudItem}>
+                <Ionicons name="time" size={24} color="#FFF" />
+                <Text style={styles.hudText}> {timeLeft}s</Text>
+              </View>
             </View>
 
-            <View style={styles.gameBoard}>
-              {cards.map((card, index) => (
-                <TouchableOpacity
-                  key={card.id}
-                  style={[
-                    styles.card,
-                    card.isFlipped ? styles.cardFlipped : styles.cardDown,
-                    card.isMatched ? styles.cardMatched : null,
-                  ]}
-                  onPress={() => handleCardPress(index)}
-                  disabled={!isGameActive || card.isFlipped}
-                >
-                  {card.isFlipped || card.isMatched ? (
-                    <FontAwesome5 name={card.icon} size={30} color="#4A2A00" />
-                  ) : (
-                    <Text style={styles.cardText}>?</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
+            {/* Papan Permainan */}
+            <View style={styles.boardContainer}>
+              <View style={styles.gameBoard}>
+                {cards.map((card, index) => (
+                  <TouchableOpacity
+                    key={card.id}
+                    style={[
+                      styles.card,
+                      card.isFlipped || card.isMatched
+                        ? styles.cardFaceUp
+                        : styles.cardFaceDown,
+                      card.isMatched && styles.cardMatched,
+                    ]}
+                    onPress={() => handleCardPress(index)}
+                    activeOpacity={0.8}
+                    disabled={card.isFlipped || card.isMatched}
+                  >
+                    {card.isFlipped || card.isMatched ? (
+                      <Image
+                        source={card.image}
+                        style={styles.cardImage}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Text style={styles.cardBackText}>?</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
+            {/* Tombol Keluar */}
             <TouchableOpacity
-              style={[styles.modalButton, styles.keluarButton]}
+              style={styles.exitButton}
               onPress={handleExitGame}
             >
-              <Ionicons name="stop" size={16} color="white" />
-              <Text style={styles.modalButtonText}>Keluar</Text>
+              <Ionicons name="close-circle" size={24} color="white" />
+              <Text style={styles.exitButtonText}>Batal Main</Text>
             </TouchableOpacity>
           </>
         )}
@@ -257,7 +278,6 @@ export default function MemoryFoodScreen() {
   );
 }
 
-// --- STYLESHEET BARU ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -266,98 +286,115 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    padding: 10,
+    justifyContent: "space-between",
+    paddingVertical: 20,
   },
-  // --- Countdown ---
   countdownOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 100,
+    zIndex: 50,
   },
   countdownText: {
-    fontSize: 96,
+    fontSize: 80,
     fontWeight: "bold",
-    color: "white",
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: 2, height: 2 },
+    color: "#FFD700",
+    textShadowColor: "rgba(0,0,0,0.8)",
     textShadowRadius: 10,
+    elevation: 10,
   },
-  // --- Game ---
   gameHud: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
-    maxWidth: 340,
-    padding: 15,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    borderRadius: 15,
-    borderColor: "#4A2A00",
-    borderWidth: 3,
-    marginBottom: 20,
+    width: "90%",
+    maxWidth: 400,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: "#FFD700",
+  },
+  hudItem: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   hudText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#4A2A00",
+    color: "white",
+    marginLeft: 8,
+  },
+  boardContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
   },
   gameBoard: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    maxWidth: 340,
+    maxWidth: 340, // Membatasi lebar agar grid 4 kolom (75px * 4 + margin)
   },
   card: {
-    width: 70, // Sedikit lebih besar
-    height: 90,
-    margin: 5,
+    width: 70,
+    height: 70,
+    margin: 6,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 3,
-    cursor: "pointer",
+    borderColor: "#FFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  cardDown: {
-    backgroundColor: "#8A2BE2",
-    borderColor: "#4B0082",
+  cardFaceDown: {
+    backgroundColor: "#6A5ACD", // Ungu slate
+    borderColor: "#483D8B",
   },
-  cardFlipped: {
-    backgroundColor: "#FFF",
-    borderColor: "#8A2BE2",
+  cardFaceUp: {
+    backgroundColor: "#FFF8DC", // Putih gading
+    borderColor: "#FF8C00",
   },
   cardMatched: {
-    backgroundColor: "#DDD",
-    borderColor: "#AAA",
-    opacity: 0.6,
+    backgroundColor: "#90EE90", // Hijau muda
+    borderColor: "#2E8B57",
+    opacity: 0.8,
   },
-  cardText: {
-    fontSize: 40,
+  cardImage: {
+    width: "85%",
+    height: "85%",
+  },
+  cardBackText: {
+    fontSize: 36,
     fontWeight: "bold",
-    color: "white",
+    color: "rgba(255,255,255,0.4)",
   },
-  // --- Tombol ---
-  modalButton: {
+  exitButton: {
     flexDirection: "row",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    backgroundColor: "#DC143C",
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 30,
     alignItems: "center",
-    justifyContent: "center",
-    borderBottomWidth: 4,
-    cursor: "pointer",
-    marginTop: 20,
+    borderWidth: 2,
+    borderColor: "#FFF",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+    marginBottom: 10,
   },
-  modalButtonText: {
+  exitButtonText: {
     color: "white",
-    fontSize: 16,
     fontWeight: "bold",
     marginLeft: 8,
-  },
-  keluarButton: {
-    backgroundColor: "#DC143C", // Merah
-    borderColor: "#8B0000",
+    fontSize: 16,
   },
 });

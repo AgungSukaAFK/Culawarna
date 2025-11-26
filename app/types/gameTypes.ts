@@ -19,8 +19,12 @@ export interface FoodItem {
   energyValue: number;
   currentStacks: number;
   maxStacks: number;
-  refillTimestamp: number;
   cost: number;
+
+  // Logika Masak
+  cookingStartTime: number; // 0 jika sedang tidak dimasak
+  isCooking: boolean; // True jika sedang di kompor
+  cookDuration: number; // Lama masak dalam ms
 }
 
 // Tipe Materi & Kuis
@@ -100,7 +104,9 @@ export type GameAction =
   | { type: "EVOLVE_CULA"; payload: { newPhase: CulaPhase } }
   | { type: "SET_MINIGAME_ACTIVE"; payload: boolean }
   // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
-  | { type: "BELI_ITEM"; payload: { itemId: string; itemType: keyof Outfit } };
+  | { type: "BELI_ITEM"; payload: { itemId: string; itemType: keyof Outfit } }
+  | { type: "MULAI_MASAK"; payload: { foodId: string } }
+  | { type: "AMBIL_MASAKAN"; payload: { foodId: string } };
 // ----------------------------------------
 
 export interface GameContextProps {

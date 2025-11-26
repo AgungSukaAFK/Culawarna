@@ -20,7 +20,7 @@ import {
 
 // --- Konstanta ---
 const STORAGE_KEY = "@CulawarnaGame:SaveData";
-const REFILL_TIME_MS = 3 * 60 * 1000;
+const COOK_TIME_MS = 3 * 60 * 1000;
 const XP_PER_LEVEL = 10;
 const KUIS_ENERGY_COST = 25;
 
@@ -39,23 +39,100 @@ const initialState: GameState = {
     aksesorisId: null,
   },
   foodInventory: {
-    "sate-bandeng": {
-      id: "sate-bandeng",
-      name: "Sate Bandeng",
-      energyValue: 20,
-      currentStacks: 1,
-      maxStacks: 3,
-      refillTimestamp: Date.now() - REFILL_TIME_MS,
-      cost: 5,
-    },
-    "nasi-uduk": {
-      id: "nasi-uduk",
-      name: "Nasi Uduk",
+    // BABY
+    mutiara: {
+      id: "mutiara",
+      name: "Bubur Mutiara",
       energyValue: 15,
+      currentStacks: 2,
+      maxStacks: 5,
+      cost: 5,
+      cookingStartTime: 0,
+      isCooking: false,
+      cookDuration: COOK_TIME_MS,
+    },
+    kue: {
+      id: "kue",
+      name: "Kue Balok",
+      energyValue: 20,
+      currentStacks: 0,
+      maxStacks: 5,
+      cost: 8,
+      cookingStartTime: 0,
+      isCooking: false,
+      cookDuration: COOK_TIME_MS,
+    },
+
+    // ANAK
+    gipang: {
+      id: "gipang",
+      name: "Gipang Kacang",
+      energyValue: 25,
+      currentStacks: 0,
+      maxStacks: 5,
+      cost: 10,
+      cookingStartTime: 0,
+      isCooking: false,
+      cookDuration: COOK_TIME_MS,
+    },
+    bugis: {
+      id: "bugis",
+      name: "Kue Bugis",
+      energyValue: 30,
+      currentStacks: 0,
+      maxStacks: 5,
+      cost: 12,
+      cookingStartTime: 0,
+      isCooking: false,
+      cookDuration: COOK_TIME_MS,
+    },
+
+    // REMAJA
+    bintul: {
+      id: "bintul",
+      name: "Ketan Bintul",
+      energyValue: 40,
+      currentStacks: 0,
+      maxStacks: 5,
+      cost: 15,
+      cookingStartTime: 0,
+      isCooking: false,
+      cookDuration: COOK_TIME_MS,
+    },
+    emping: {
+      id: "emping",
+      name: "Emping Melinjo",
+      energyValue: 35,
+      currentStacks: 0,
+      maxStacks: 5,
+      cost: 15,
+      cookingStartTime: 0,
+      isCooking: false,
+      cookDuration: COOK_TIME_MS,
+    },
+
+    // DEWASA
+    rabeg: {
+      id: "rabeg",
+      name: "Rabeg Banten",
+      energyValue: 60,
       currentStacks: 0,
       maxStacks: 3,
-      refillTimestamp: Date.now(),
-      cost: 3,
+      cost: 25,
+      cookingStartTime: 0,
+      isCooking: false,
+      cookDuration: COOK_TIME_MS * 2,
+    },
+    pecakbandeng: {
+      id: "pecakbandeng",
+      name: "Pecak Bandeng",
+      energyValue: 80,
+      currentStacks: 0,
+      maxStacks: 3,
+      cost: 30,
+      cookingStartTime: 0,
+      isCooking: false,
+      cookDuration: COOK_TIME_MS * 2,
     },
   },
   materiProgress: {
@@ -166,29 +243,53 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         },
       };
     }
-    case "REFILL_MAKANAN": {
-      // ... (logika refill tetap sama) ...
+    case "MULAI_MASAK": {
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
-      const now = Date.now();
-      if (
-        item &&
-        item.currentStacks < item.maxStacks &&
-        now - item.refillTimestamp >= REFILL_TIME_MS
-      ) {
-        return {
-          ...state,
-          foodInventory: {
-            ...state.foodInventory,
-            [foodId]: {
-              ...item,
-              currentStacks: item.currentStacks + 1,
-              refillTimestamp: now,
-            },
-          },
-        };
+
+      // 1. Hitung berapa yg sedang dimasak
+      const cookingCount = Object.values(state.foodInventory).filter(
+        (f) => f.isCooking
+      ).length;
+
+      // 2. Cek validasi (Slot penuh? Stok penuh? Sedang masak?)
+      if (cookingCount >= 2) {
+        // Alert akan dihandle di UI, di sini kita return state aja
+        return state;
       }
-      return state;
+      if (item.currentStacks >= item.maxStacks || item.isCooking) return state;
+
+      return {
+        ...state,
+        foodInventory: {
+          ...state.foodInventory,
+          [foodId]: {
+            ...item,
+            isCooking: true,
+            cookingStartTime: Date.now(),
+          },
+        },
+      };
+    }
+
+    case "AMBIL_MASAKAN": {
+      const { foodId } = action.payload;
+      const item = state.foodInventory[foodId];
+
+      if (!item.isCooking) return state;
+
+      return {
+        ...state,
+        foodInventory: {
+          ...state.foodInventory,
+          [foodId]: {
+            ...item,
+            isCooking: false,
+            cookingStartTime: 0,
+            currentStacks: item.currentStacks + 1,
+          },
+        },
+      };
     }
 
     // ... (case 'START_KUIS' dan 'SUBMIT_KUIS' tetap sama) ...

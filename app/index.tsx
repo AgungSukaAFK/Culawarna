@@ -1,17 +1,15 @@
 // Di dalam file: app/index.tsx
-// (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
 
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
+import { ResizeMode, Video } from "expo-av"; // <-- Import Video dari expo-av
 import { BlurView } from "expo-blur";
-// Hapus Constants, kita tidak pakai statusBarHeight lagi
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   BackHandler,
   Image,
-  ImageBackground,
   ImageSourcePropType,
   Linking,
   Modal,
@@ -22,7 +20,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// --- PERBAIKAN: Impor SafeAreaView dari context ---
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CulaCharacter } from "./components/CulaCharacter";
 import { useGameContext } from "./context/GameContext";
@@ -65,7 +62,7 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
           >
             <Text style={styles.modalTitle}>Tentang Culawarna</Text>
             <Text style={styles.aboutText}>
-              Culawarna adalah game edukasi *virtual pet* untuk mempelajari
+              Culawarna adalah game edukasi virtual pet untuk mempelajari
               konsep-konsep dasar Sosiologi.
               {"\n\n"}
               Pelihara Si Cula, bantu dia belajar dengan menjawab kuis
@@ -126,15 +123,24 @@ export default function HomeScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require("@/assets/images/homescreen_bg.png")}
-      style={styles.background}
-    >
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="auto" />
 
-      {/* --- PERBAIKAN: Ganti ke SafeAreaView yang benar --- */}
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* --- VIDEO BACKGROUND --- */}
+      {/* Ganti nama file 'homescreen.mp4' sesuai file Anda */}
+      <Video
+        source={require("@/assets/bgvideo/pantai.mp4")}
+        style={StyleSheet.absoluteFill} // Mengisi seluruh layar
+        resizeMode={ResizeMode.COVER} // Memastikan video menutupi layar tanpa distorsi
+        isLooping // Video berulang terus
+        shouldPlay // Video otomatis main
+        isMuted={true} // Mute agar tidak tabrakan dengan musik BGM
+      />
+      {/* ------------------------ */}
+
+      {/* Konten Utama */}
+      <SafeAreaView style={styles.contentContainer} edges={["top"]}>
         {/* ZONA 1: LANGIT (Judul & Ikon) */}
         <View style={styles.skyZone}>
           <TouchableOpacity
@@ -158,13 +164,8 @@ export default function HomeScreen() {
             style={styles.titleImage}
             resizeMode="contain"
           />
-          {/* --- TEKS BARU DITAMBAHKAN DI SINI --- */}
-          <Text style={styles.subtitleText}>
-            Media Pembelajaran berbasis Game untuk Mata Pelajaran Sosiologi
-            Kelas 11
-          </Text>
-          {/* --- AKHIR TEKS BARU --- */}
         </View>
+
         {/* ZONA 2: LAUT (Tombol Play) */}
         <View style={styles.seaZone}>
           <TouchableOpacity style={styles.playButton} onPress={handlePlayPress}>
@@ -176,18 +177,22 @@ export default function HomeScreen() {
             />
           </TouchableOpacity>
         </View>
+
         {/* ZONA 3: PASIR (Karakter) */}
         <View style={styles.sandZone}>
+          {/* Gunakan Komponen Karakter Baru */}
+          {/* Hapus CulaCharacter jika belum membuat komponennya, 
+               atau ganti dengan Image biasa jika ingin gambar statis */}
           <CulaCharacter style={styles.character} />
         </View>
       </SafeAreaView>
 
+      {/* Modals */}
       <ModalInfo
         visible={isInfoModalVisible}
         onClose={() => setIsInfoModalVisible(false)}
       />
 
-      {/* MODAL PENGATURAN */}
       <Modal
         visible={settingsModalVisible}
         transparent={true}
@@ -225,7 +230,6 @@ export default function HomeScreen() {
                 <Text style={styles.modalButtonText}>Kembali</Text>
               </TouchableOpacity>
 
-              {/* Sembunyikan tombol Keluar di Web */}
               {Platform.OS !== "web" && (
                 <TouchableOpacity
                   style={[styles.modalButton, styles.keluarButton]}
@@ -239,21 +243,18 @@ export default function HomeScreen() {
           </View>
         </BlurView>
       </Modal>
-    </ImageBackground>
+    </View>
   );
 }
 
 // STYLESHEET
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    // Perbaikan untuk Web: Pastikan gambar cover penuh
-    width: "100%",
-    height: "100%",
-  },
   container: {
     flex: 1,
-    // Hapus paddingTop, SafeAreaView yg mengatur
+    backgroundColor: "black", // Warna fallback jika video gagal load
+  },
+  contentContainer: {
+    flex: 1,
   },
   skyZone: {
     flex: 3,
@@ -271,23 +272,10 @@ const styles = StyleSheet.create({
   },
   titleImage: {
     width: "80%",
-    maxWidth: 400, // <-- Tambahkan maxWidth untuk web
+    maxWidth: 400,
     height: "60%",
-    minHeight: 100, // <-- Tambahkan minHeight untuk web
+    minHeight: 100,
   },
-  // --- STYLE BARU UNTUK SUBTITLE ---
-  subtitleText: {
-    fontSize: Platform.OS === "web" ? 18 : 21,
-    color: "#000080", // Biru tua, senada dengan title
-    fontWeight: "bold",
-    textAlign: "center",
-    marginTop: 4, // Jarak dari title
-    paddingHorizontal: 20,
-    textShadowColor: "rgba(255, 255, 255, 0.7)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
-  // --- AKHIR STYLE BARU ---
   playButton: {
     width: 80,
     height: 80,
@@ -297,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.5)",
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
+    cursor: "pointer",
   },
   playIcon: {
     marginLeft: 5,
@@ -308,8 +296,8 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "50%",
     height: "90%",
-    maxWidth: 300, // <-- Tambahkan maxWidth untuk web
-    maxHeight: 400, // <-- Tambahkan maxHeight untuk web
+    maxWidth: 300,
+    maxHeight: 400,
   },
   gameButton: {
     position: "absolute",
@@ -323,7 +311,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(120, 80, 220, 0.85)",
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.5)",
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
+    cursor: "pointer",
   },
   infoButton: {
     left: 15,
@@ -376,7 +364,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 4,
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
+    cursor: "pointer",
   },
   modalButtonText: {
     color: "white",
@@ -429,7 +417,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     elevation: 3,
     marginTop: 10,
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
+    cursor: "pointer",
   },
   groupInstaText: {
     marginLeft: 10,

@@ -1,8 +1,16 @@
-import { Ionicons } from "@expo/vector-icons";
+// Di dalam file: app/dapur.tsx
+
+import { CulaCharacter } from "@/app/components/CulaCharacter";
+import { GameHUDLayout } from "@/app/components/GameHUDLayout";
+import { useGameContext } from "@/app/context/GameContext";
+import { FoodItem } from "@/app/types/gameTypes";
+import { FoodImages } from "@/app/utils/foodAssets";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   Modal,
   ScrollView,
@@ -12,45 +20,66 @@ import {
   View,
 } from "react-native";
 
-// Impor Tipe, Layout, dan Konteks
-import { GameHUDLayout } from "@/app/components/GameHUDLayout";
-import { useGameContext } from "@/app/context/GameContext";
-import { FoodItem } from "./types/gameTypes";
-import { CulaCharacter } from "./components/CulaCharacter";
+// --- DAFTAR MAKANAN AKUMULATIF ---
+const UNLOCKED_FOODS: { [key: string]: string[] } = {
+  Baby: ["mutiara", "kue"],
+  Anak: ["mutiara", "kue", "gipang", "bugis"],
+  Remaja: ["mutiara", "kue", "gipang", "bugis", "bintul", "emping"],
+  Dewasa: [
+    "mutiara",
+    "kue",
+    "gipang",
+    "bugis",
+    "bintul",
+    "emping",
+    "rabeg",
+    "pecakbandeng",
+  ],
+};
 
-interface ModalMakananProps {
+interface ModalDapurProps {
   visible: boolean;
   onClose: () => void;
 }
 
-// --- KOMPONEN MODAL SPESIFIK DAPUR ---
-const ModalMakanan: React.FC<ModalMakananProps> = ({ visible, onClose }) => {
+const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
   const { state, dispatch } = useGameContext();
   const [now, setNow] = useState(Date.now());
 
+  // Timer update per detik
   useEffect(() => {
-    // VVV PERBAIKAN DI SINI VVV
-    let timer: ReturnType<typeof setInterval>; // Tipe yang lebih aman
+    let timer: any; // <-- PERBAIKAN 1: Gunakan 'any' agar aman di RN
     if (visible) {
-      setNow(Date.now()); // Update langsung saat buka
-      // Set timer untuk update UI waktu refill setiap detik
+      setNow(Date.now());
       timer = setInterval(() => setNow(Date.now()), 1000);
     }
     return () => clearInterval(timer);
   }, [visible]);
 
-  const handleKonsumsi = (foodId: string) => {
-    dispatch({ type: "KONSUMSI_MAKANAN", payload: { foodId } });
-  };
-  const handleBeli = (foodId: string) => {
-    dispatch({ type: "BELI_MAKANAN", payload: { foodId } });
-  };
-  const handleRefill = (foodId: string) => {
-    dispatch({ type: "REFILL_MAKANAN", payload: { foodId } });
-    setNow(Date.now()); // Update 'now' setelah refill
+  // Hitung slot masak (Max 2)
+  const cookingCount = Object.values(state.foodInventory).filter(
+    (f: FoodItem) => f.isCooking
+  ).length;
+  const MAX_SLOT = 2;
+
+  const handleMasak = (item: FoodItem) => {
+    if (cookingCount >= MAX_SLOT) {
+      Alert.alert("Kompor Penuh!", "Tunggu masakan lain matang dulu ya.");
+      return;
+    }
+    dispatch({ type: "MULAI_MASAK", payload: { foodId: item.id } });
   };
 
-  const REFILL_TIME_MS = 3 * 60 * 1000;
+  const handleAmbil = (item: FoodItem) => {
+    dispatch({ type: "AMBIL_MASAKAN", payload: { foodId: item.id } });
+  };
+
+  const handleMakan = (item: FoodItem) => {
+    dispatch({ type: "KONSUMSI_MAKANAN", payload: { foodId: item.id } });
+  };
+
+  // Ambil list makanan sesuai fase saat ini
+  const visibleFoodKeys = UNLOCKED_FOODS[state.phase] || [];
 
   return (
     <Modal
@@ -59,89 +88,107 @@ const ModalMakanan: React.FC<ModalMakananProps> = ({ visible, onClose }) => {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
+      <BlurView intensity={20} tint="dark" style={styles.modalBackdrop}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Tas Makanan</Text>
+          <View style={styles.headerModal}>
+            <Text style={styles.modalTitle}>Dapur Si Cula</Text>
+            <View style={styles.slotBadge}>
+              <MaterialCommunityIcons name="stove" size={20} color="#FFF" />
+              <Text style={styles.slotText}>
+                Masak: {cookingCount}/{MAX_SLOT}
+              </Text>
+            </View>
+          </View>
+
           <ScrollView style={{ width: "100%" }}>
-            {Object.values(state.foodInventory).map((item: FoodItem) => {
-              const sisaWaktu = item.refillTimestamp + REFILL_TIME_MS - now;
-              const bisaRefill = sisaWaktu <= 0;
-              const sisaMenit = Math.floor(sisaWaktu / 60000);
-              const sisaDetik = Math.max(
-                0,
-                Math.floor((sisaWaktu % 60000) / 1000)
-              ); // Pastikan tidak negatif
+            {visibleFoodKeys.map((key) => {
+              const item = state.foodInventory[key];
+              if (!item) return null;
+
+              // Hitung sisa waktu masak
+              const finishTime = item.cookingStartTime + item.cookDuration;
+              const timeLeft = Math.max(0, finishTime - now);
+              const isReady = item.isCooking && timeLeft <= 0;
 
               return (
                 <View key={item.id} style={styles.foodItem}>
+                  {/* PERBAIKAN 2: Casting ke 'any' agar index string valid */}
+                  <Image
+                    source={(FoodImages as any)[item.id]}
+                    style={styles.foodImage}
+                    resizeMode="contain"
+                  />
+
                   <View style={styles.foodInfo}>
                     <Text style={styles.foodName}>{item.name}</Text>
                     <Text style={styles.foodDesc}>
-                      Energi: +{item.energyValue}
+                      Energi +{item.energyValue}
                     </Text>
                     <Text style={styles.foodDesc}>
-                      Tumpukan: {item.currentStacks} / {item.maxStacks}
+                      Stok: {item.currentStacks}/{item.maxStacks}
                     </Text>
                   </View>
+
                   <View style={styles.foodActions}>
+                    {/* Tombol Makan */}
                     <TouchableOpacity
                       style={[
-                        styles.foodButton,
-                        styles.konsumsiButton,
-                        item.currentStacks === 0 && styles.disabledButton,
+                        styles.actionButton,
+                        styles.btnMakan,
+                        item.currentStacks === 0 && styles.btnDisabled,
                       ]}
-                      onPress={() => handleKonsumsi(item.id)}
+                      onPress={() => handleMakan(item)}
                       disabled={item.currentStacks === 0}
                     >
-                      <Text style={styles.foodButtonText}>Makan</Text>
+                      <Text style={styles.btnText}>Makan</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.foodButton,
-                        styles.beliButton,
-                        (state.koin < item.cost ||
-                          item.currentStacks >= item.maxStacks) &&
-                          styles.disabledButton,
-                      ]}
-                      onPress={() => handleBeli(item.id)}
-                      disabled={
-                        state.koin < item.cost ||
-                        item.currentStacks >= item.maxStacks
-                      }
-                    >
-                      <Text style={styles.foodButtonText}>
-                        Beli ({item.cost} Koin)
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.foodButton,
-                        styles.refillButton,
-                        (!bisaRefill || item.currentStacks >= item.maxStacks) &&
-                          styles.disabledButton,
-                      ]}
-                      onPress={() => handleRefill(item.id)}
-                      disabled={
-                        !bisaRefill || item.currentStacks >= item.maxStacks
-                      }
-                    >
-                      <Text style={styles.foodButtonText}>
-                        {bisaRefill
-                          ? "Refill Gratis"
-                          : `${sisaMenit}m ${sisaDetik}d`}
-                      </Text>
-                    </TouchableOpacity>
+
+                    {/* Tombol Masak/Sajikan */}
+                    {item.isCooking ? (
+                      isReady ? (
+                        <TouchableOpacity
+                          style={[styles.actionButton, styles.btnSajikan]}
+                          onPress={() => handleAmbil(item)}
+                        >
+                          <Text style={styles.btnText}>Sajikan</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={[styles.actionButton, styles.btnTimer]}>
+                          <Text style={styles.btnText}>
+                            {Math.ceil(timeLeft / 1000)}s
+                          </Text>
+                        </View>
+                      )
+                    ) : (
+                      <TouchableOpacity
+                        style={[
+                          styles.actionButton,
+                          styles.btnMasak,
+                          (cookingCount >= MAX_SLOT ||
+                            item.currentStacks >= item.maxStacks) &&
+                            styles.btnDisabled,
+                        ]}
+                        onPress={() => handleMasak(item)}
+                        disabled={
+                          cookingCount >= MAX_SLOT ||
+                          item.currentStacks >= item.maxStacks
+                        }
+                      >
+                        <Text style={styles.btnText}>
+                          {item.currentStacks >= item.maxStacks
+                            ? "Penuh"
+                            : "Masak"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               );
             })}
           </ScrollView>
+
           <TouchableOpacity
-            style={[
-              styles.modalButton,
-              styles.kembaliButton,
-              { alignSelf: "center", marginTop: 20 },
-            ]}
+            style={[styles.modalButton, styles.kembaliButton]}
             onPress={onClose}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
@@ -153,29 +200,27 @@ const ModalMakanan: React.FC<ModalMakananProps> = ({ visible, onClose }) => {
   );
 };
 
-// --- LAYAR DAPUR ---
 export default function DapurScreen() {
   const router = useRouter();
-  const [isMakananVisible, setMakananVisible] = useState<boolean>(false);
+  const [isModalVisible, setModalVisible] = useState(false);
 
   return (
     <GameHUDLayout
-      backgroundImage={require("@/assets/images/dapur_bg.png")} //
-      onPressNavLeft={() => router.replace("/ruangTamu")} //
+      backgroundImage={require("@/assets/images/dapur_bg.png")}
+      onPressNavLeft={() => router.replace("/ruangTamu")}
       onPressNavRight={() => router.replace("/kamar")}
       middleNavButton={{
-        onPress: () => setMakananVisible(true),
+        onPress: () => setModalVisible(true),
         icon: <Ionicons name="restaurant" size={24} color="white" />,
-        text: "Makanan",
+        text: "Masak",
       }}
       pageModal={
-        <ModalMakanan
-          visible={isMakananVisible}
-          onClose={() => setMakananVisible(false)}
+        <ModalDapur
+          visible={isModalVisible}
+          onClose={() => setModalVisible(false)}
         />
       }
     >
-      {/* Konten Halaman Ini */}
       <View style={styles.kontenArea}>
         <CulaCharacter style={styles.karakter} />
       </View>
@@ -183,7 +228,6 @@ export default function DapurScreen() {
   );
 }
 
-// --- STYLESHEET (Hanya style spesifik halaman + modal) ---
 const styles = StyleSheet.create({
   kontenArea: {
     flex: 1,
@@ -196,7 +240,6 @@ const styles = StyleSheet.create({
     height: 300,
     resizeMode: "contain",
   },
-  // --- Style Modal ---
   modalBackdrop: {
     flex: 1,
     justifyContent: "center",
@@ -204,51 +247,58 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: "90%",
-    maxWidth: 340,
+    maxWidth: 400,
     maxHeight: "80%",
     backgroundColor: "#FFB347",
     borderRadius: 20,
     borderWidth: 5,
     borderColor: "#4A2A00",
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#4A2A00",
-    marginBottom: 20,
-    alignSelf: "center",
-  },
-  modalButton: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 15,
+    padding: 15,
     alignItems: "center",
-    justifyContent: "center",
-    borderBottomWidth: 4,
   },
-  modalButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginLeft: 5,
-  },
-  kembaliButton: {
-    backgroundColor: "#8A2BE2",
-    borderColor: "#4B0082",
-  },
-  // --- Style Modal Makanan ---
-  foodItem: {
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#4A2A00",
-    marginBottom: 10,
+  headerModal: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    width: "100%",
+    marginBottom: 15,
+    borderBottomWidth: 2,
+    borderColor: "rgba(74,42,0,0.2)",
+    paddingBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#4A2A00",
+  },
+  slotBadge: {
+    flexDirection: "row",
+    backgroundColor: "#D35400",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    alignItems: "center",
+  },
+  slotText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 12,
+    marginLeft: 5,
+  },
+  foodItem: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#E67E22",
+  },
+  foodImage: {
+    width: 55,
+    height: 55,
+    marginRight: 10,
   },
   foodInfo: {
     flex: 1,
@@ -259,37 +309,50 @@ const styles = StyleSheet.create({
     color: "#4A2A00",
   },
   foodDesc: {
-    fontSize: 12,
-    color: "#4A2A00",
+    fontSize: 11,
+    color: "#555",
   },
   foodActions: {
+    flexDirection: "column",
+    gap: 6,
     alignItems: "flex-end",
-    marginLeft: 10,
   },
-  foodButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 5,
-    marginTop: 4,
-    minWidth: 80,
+  actionButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    minWidth: 75,
     alignItems: "center",
+    justifyContent: "center",
   },
-  foodButtonText: {
+  btnMakan: { backgroundColor: "#27AE60" },
+  btnMasak: { backgroundColor: "#E67E22" },
+  btnSajikan: { backgroundColor: "#2980B9" },
+  btnTimer: { backgroundColor: "#7F8C8D" },
+  btnDisabled: { backgroundColor: "#BDC3C7", opacity: 0.6 },
+  btnText: {
     color: "white",
-    fontSize: 12,
     fontWeight: "bold",
+    fontSize: 11,
   },
-  konsumsiButton: {
-    backgroundColor: "#28a745",
+  modalButton: {
+    flexDirection: "row",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 4,
+    marginTop: 10,
   },
-  beliButton: {
-    backgroundColor: "#007bff",
+  modalButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginLeft: 5,
   },
-  refillButton: {
-    backgroundColor: "#ffc107",
-  },
-  disabledButton: {
-    backgroundColor: "#6c757d",
-    opacity: 0.7,
+  kembaliButton: {
+    backgroundColor: "#8A2BE2",
+    borderColor: "#4B0082",
   },
 });

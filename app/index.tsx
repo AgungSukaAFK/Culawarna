@@ -80,12 +80,6 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
                   style={styles.memberImage}
                   resizeMode="cover"
                 />
-                <Text
-                  style={{ fontWeight: "bold", fontSize: 18, color: "#4A2A00" }}
-                >
-                  TODO: Nama Anggota
-                </Text>
-                <Text style={{ color: "#666" }}>Role Anggota</Text>
               </View>
             ))}
             <TouchableOpacity

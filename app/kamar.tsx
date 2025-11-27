@@ -32,7 +32,7 @@ const kamarHelpContent: HelpContent = {
 • Pilih baju adat yang ingin dipakai.
 • Tekan "Lepas" untuk kembali ke tampilan dasar.
 
-Cobalah berbagai baju adat dari seluruh Nusantara!`,
+Cobalah untuk koleksi baju adat yang tersedia di toko budaya!`,
 };
 
 // --- KOMPONEN MODAL SPESIFIK KAMAR ---

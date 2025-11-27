@@ -1,148 +1,106 @@
 // Di dalam file: app/_layout.tsx
-// (GANTI SELURUH FILE ANDA DENGAN INI)
 
 import { Audio } from "expo-av";
 import { Stack, usePathname } from "expo-router";
+import { StatusBar } from "expo-status-bar"; // Tambah StatusBar
 import React, { useEffect, useRef, useState } from "react";
-import { AppState } from "react-native";
+import { AppState, Platform, StyleSheet, View } from "react-native"; // Tambah Platform, View, StyleSheet
 import { GameProvider, useGameContext } from "./context/GameContext";
 
-// Definisikan tipe lagu dan path-nya
-type TrackName = "home" | "game" | "kuis" | "minigame"; // <-- Tambah 'minigame'
+// --- LOGIKA AUDIO MANAGER (TETAP SAMA) ---
+type TrackName = "home" | "game" | "kuis" | "minigame";
 const trackMap: Record<TrackName, any> = {
   home: require("@/assets/audio/home.mp3"),
   game: require("@/assets/audio/game.mp3"),
   kuis: require("@/assets/audio/kuis.mp3"),
-  minigame: require("@/assets/audio/kuis.mp3"), // <-- Pake audio kuis untuk minigame
+  minigame: require("@/assets/audio/kuis.mp3"),
 };
 
-// Objek untuk menyimpan referensi ke SEMUA sound
 interface SoundRefs {
   home: Audio.Sound | null;
   game: Audio.Sound | null;
   kuis: Audio.Sound | null;
-  minigame: Audio.Sound | null; // <-- Tambah 'minigame'
+  minigame: Audio.Sound | null;
 }
 
-/**
- * Komponen Manajer Audio
- */
 function AudioManager() {
   const { state } = useGameContext();
   const pathname = usePathname();
-
-  // Ref untuk menyimpan semua objek sound
   const soundRef = useRef<SoundRefs>({
     home: null,
     game: null,
     kuis: null,
-    minigame: null, // <-- Tambah 'minigame'
+    minigame: null,
   });
-  // State untuk melacak apakah semua sound sudah siap
   const [isLoaded, setIsLoaded] = useState(false);
-  // State untuk melacak trek mana yang HARUSNYA diputar
   const [activeTrack, setActiveTrack] = useState<TrackName | null>(null);
 
-  // --- LANGKAH 1: Muat SEMUA audio ---
   useEffect(() => {
     const loadAllAudio = async () => {
-      console.log("[Audio] Memuat semua trek...");
       try {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-        });
-
-        // Muat 'home'
-        const { sound: homeSound } = await Audio.Sound.createAsync(
-          trackMap.home,
-          { isLooping: true, volume: state.volume }
-        );
-        soundRef.current.home = homeSound;
-
-        // Muat 'game'
-        const { sound: gameSound } = await Audio.Sound.createAsync(
-          trackMap.game,
-          { isLooping: true, volume: state.volume }
-        );
-        soundRef.current.game = gameSound;
-
-        // Muat 'kuis'
-        const { sound: kuisSound } = await Audio.Sound.createAsync(
-          trackMap.kuis,
-          { isLooping: true, volume: state.volume }
-        );
-        soundRef.current.kuis = kuisSound;
-
-        // Muat 'minigame' (BARU)
-        const { sound: minigameSound } = await Audio.Sound.createAsync(
-          trackMap.minigame,
-          { isLooping: true, volume: state.volume }
-        );
-        soundRef.current.minigame = minigameSound;
-
+        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+        const loadSound = async (source: any) => {
+          const { sound } = await Audio.Sound.createAsync(source, {
+            isLooping: true,
+            volume: state.volume,
+          });
+          return sound;
+        };
+        const [homeSound, gameSound, kuisSound, minigameSound] =
+          await Promise.all([
+            loadSound(trackMap.home),
+            loadSound(trackMap.game),
+            loadSound(trackMap.kuis),
+            loadSound(trackMap.minigame),
+          ]);
+        soundRef.current = {
+          home: homeSound,
+          game: gameSound,
+          kuis: kuisSound,
+          minigame: minigameSound,
+        };
         setIsLoaded(true);
-        console.log("[Audio] Semua trek berhasil dimuat.");
       } catch (e) {
-        console.error("[Audio] Gagal memuat semua trek:", e);
+        console.error("[Audio] Error:", e);
       }
     };
-
     loadAllAudio();
-
-    // Cleanup: Unload semua audio
     return () => {
-      console.log("[Audio] Unloading semua trek...");
-      soundRef.current.home?.unloadAsync();
-      soundRef.current.game?.unloadAsync();
-      soundRef.current.kuis?.unloadAsync();
-      soundRef.current.minigame?.unloadAsync(); // <-- Tambah 'minigame'
+      Object.values(soundRef.current).forEach((sound) => sound?.unloadAsync());
     };
-  }, []); // <-- Hanya berjalan sekali
+  }, []);
 
-  // --- LANGKAH 2: Tentukan trek mana yang harus aktif ---
   useEffect(() => {
     if (!isLoaded) return;
-
-    // Jika minigame aktif, paksa putar 'minigame'
     if (state.isMinigameActive) {
       setActiveTrack("minigame");
       return;
     }
-
-    // Jika tidak, tentukan berdasarkan pathname
     let newTrack: TrackName | null = null;
-    if (pathname === "/" || pathname === "/pantai") {
-      // <-- Tambah /pantai
-      newTrack = "home";
-    } else if (["/kamar", "/dapur", "/ruangTamu"].includes(pathname)) {
+    if (pathname === "/" || pathname === "/pantai") newTrack = "home";
+    else if (["/kamar", "/dapur", "/ruangTamu"].includes(pathname))
       newTrack = "game";
-    } else if (pathname.startsWith("/kuis") || pathname === "/kelas") {
+    else if (
+      pathname.startsWith("/kuis") ||
+      pathname === "/kelas" ||
+      pathname === "/riwayat"
+    )
       newTrack = "kuis";
-    }
-
     setActiveTrack(newTrack);
-  }, [pathname, isLoaded, state.isMinigameActive]); // <-- Tambah dependency
+  }, [pathname, isLoaded, state.isMinigameActive]);
 
-  // --- LANGKAH 3: Putar/Pause trek yang aktif ---
   useEffect(() => {
-    if (!isLoaded || !activeTrack) {
-      // Jika tidak ada trek aktif (misal di /riwayat), matikan semua
-      if (isLoaded) {
-        Object.values(soundRef.current).forEach((sound) => sound?.pauseAsync());
-      }
-      return;
-    }
-
+    if (!isLoaded) return;
     const switchTrack = async () => {
-      console.log(`[Audio] Memutar trek: ${activeTrack}`);
       try {
-        // Loop semua sound
         for (const [trackName, sound] of Object.entries(soundRef.current)) {
           if (sound) {
             if (trackName === activeTrack) {
-              await sound.playAsync(); // Putar trek yang aktif
+              const status = await sound.getStatusAsync();
+              if (status.isLoaded && !status.isPlaying) await sound.playAsync();
             } else {
-              await sound.pauseAsync(); // Pause trek lainnya
+              const status = await sound.getStatusAsync();
+              if (status.isLoaded && status.isPlaying) await sound.pauseAsync();
             }
           }
         }
@@ -150,69 +108,94 @@ function AudioManager() {
         console.error("[Audio] Gagal ganti trek:", e);
       }
     };
-
     switchTrack();
-  }, [activeTrack]); // <-- Berjalan saat activeTrack berubah
+  }, [activeTrack, isLoaded]);
 
-  // --- LANGKAH 4: Atur volume ---
   useEffect(() => {
     if (!isLoaded) return;
-
     const setAllVolumes = async () => {
-      console.log(`[Audio] Mengatur volume ke: ${state.volume}`);
       try {
-        await soundRef.current.home?.setVolumeAsync(state.volume);
-        await soundRef.current.game?.setVolumeAsync(state.volume);
-        await soundRef.current.kuis?.setVolumeAsync(state.volume);
-        await soundRef.current.minigame?.setVolumeAsync(state.volume); // <-- Tambah 'minigame'
-      } catch (e) {
-        console.warn("[Audio] Gagal set volume", e);
-      }
+        await Promise.all(
+          Object.values(soundRef.current).map((sound) =>
+            sound?.setVolumeAsync(state.volume)
+          )
+        );
+      } catch (e) {}
     };
-
     setAllVolumes();
-  }, [state.volume]); // <-- Berjalan saat state.volume berubah
+  }, [state.volume, isLoaded]);
 
-  // --- LANGKAH 5: Tangani App State (Background/Foreground) ---
   useEffect(() => {
     if (!isLoaded) return;
-
     const subscription = AppState.addEventListener(
       "change",
       async (nextAppState) => {
-        // Dapatkan sound yang sedang aktif
         const soundToControl = activeTrack
           ? soundRef.current[activeTrack]
           : null;
-
         if (!soundToControl) return;
-
         try {
-          if (nextAppState.match(/inactive|background/)) {
+          if (nextAppState.match(/inactive|background/))
             await soundToControl.pauseAsync();
-          } else if (nextAppState === "active") {
-            await soundToControl.playAsync();
-          }
-        } catch (e) {
-          console.error("[Audio] Gagal pause/play:", e);
-        }
+          else if (nextAppState === "active") await soundToControl.playAsync();
+        } catch (e) {}
       }
     );
-
     return () => {
       subscription.remove();
     };
-  }, [isLoaded, activeTrack]); // <-- Tambah activeTrack
+  }, [isLoaded, activeTrack]);
 
-  return null; // Komponen ini tidak me-render UI
+  return null;
 }
 
-// --- Komponen Layout Utama ---
+// --- LAYOUT UTAMA DENGAN WRAPPER WEB ---
 export default function RootLayout() {
+  const isWeb = Platform.OS === "web";
+
   return (
     <GameProvider>
       <AudioManager />
-      <Stack screenOptions={{ headerShown: false }} />
+
+      {/* Container Luar (Gelap di Web) */}
+      <View style={isWeb ? styles.webContainer : styles.nativeContainer}>
+        <StatusBar style="light" />
+
+        {/* Frame HP (Tengah di Web) */}
+        <View style={isWeb ? styles.webFrame : styles.nativeFrame}>
+          <Stack screenOptions={{ headerShown: false }} />
+        </View>
+      </View>
     </GameProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  nativeContainer: { flex: 1 },
+  nativeFrame: { flex: 1 },
+
+  // Style Khusus Web
+  webContainer: {
+    flex: 1,
+    backgroundColor: "#121212", // Background luar gelap
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "100%",
+  },
+  webFrame: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 480, // <-- KUNCI: Lebar maksimal seperti HP
+    maxHeight: "100%",
+    backgroundColor: "#000",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+    // Opsional: Border tipis
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: "#333",
+  },
+});

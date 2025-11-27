@@ -1,7 +1,7 @@
 {
   "bab1": {
     "id": "bab1",
-    "password": "123",
+    "password": "1",
     "title": "BAB 1: Kelompok Sosial",
     "questions": [
       {
@@ -39,11 +39,11 @@
         "questionText": "Kelompok sosial adalah …",
         "options": [
           "Kumpulan individu yang hidup di wilayah yang sama",
-          "Kumpulan dua orang atau lebih yang saling berinteraksi dan memiliki kesamaan",
+          "Kumpulan dua orang atau lebih yang saling berinteraksi dan memiliki tujuan bersama",
           "Sekumpulan orang yang memiliki perbedaan tujuan",
           "Kelompok yang selalu bersifat formal"
         ],
-        "correctAnswer": "Kumpulan dua orang atau lebih yang saling berinteraksi dan memiliki kesamaan"
+        "correctAnswer": "Kumpulan dua orang atau lebih yang saling berinteraksi dan memiliki tujuan bersama"
       },
       {
         "type": "ABCD",
@@ -138,7 +138,7 @@
   },
   "bab2": {
     "id": "bab2",
-    "password": "123",
+    "password": "2",
     "title": "BAB 2: Permasalahan Sosial",
     "questions": [
       {
@@ -285,7 +285,7 @@
   },
   "bab3": {
     "id": "bab3",
-    "password": "123",
+    "password": "3",
     "title": "BAB 3: Konflik Sosial",
     "questions": [
       {
@@ -432,7 +432,7 @@
   },
   "bab4": {
     "id": "bab4",
-    "password": "123",
+    "password": "4",
     "title": "BAB 4: Harmoni Sosial",
     "questions": [
       {

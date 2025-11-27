@@ -1,8 +1,9 @@
 // Di dalam file: app/index.tsx
 
+import { CulaCharacter } from "@/app/components/CulaCharacter"; // Import karakter dinamis
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
-import { ResizeMode, Video } from "expo-av"; // <-- Import Video dari expo-av
+import { ResizeMode, Video } from "expo-av";
 import { BlurView } from "expo-blur";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -10,6 +11,7 @@ import React, { useState } from "react";
 import {
   BackHandler,
   Image,
+  ImageBackground, // Pastikan di-import
   ImageSourcePropType,
   Linking,
   Modal,
@@ -21,10 +23,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CulaCharacter } from "./components/CulaCharacter";
 import { useGameContext } from "./context/GameContext";
 
-// --- Komponen Modal Info (Tetap sama) ---
+// --- KOMPONEN MODAL INFO (Tetap Sama) ---
 interface ModalInfoProps {
   visible: boolean;
   onClose: () => void;
@@ -66,17 +67,26 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
               konsep-konsep dasar Sosiologi.
               {"\n\n"}
               Pelihara Si Cula, bantu dia belajar dengan menjawab kuis
-              Sosiologi, dan saksikan dia berevolusi! Aplikasi ini mengambil
-              tema Budaya Banten sebagai latar cerita visualnya.
+              Sosiologi, dan saksikan dia berevolusi!
             </Text>
             <Text style={styles.modalSubTitle}>Tim Pengembang</Text>
             {teamMemberImages.map((img, index) => (
-              <Image
+              <View
                 key={index}
-                source={img}
-                style={styles.memberImage}
-                resizeMode="cover"
-              />
+                style={{ marginBottom: 20, alignItems: "center" }}
+              >
+                <Image
+                  source={img}
+                  style={styles.memberImage}
+                  resizeMode="cover"
+                />
+                <Text
+                  style={{ fontWeight: "bold", fontSize: 18, color: "#4A2A00" }}
+                >
+                  TODO: Nama Anggota
+                </Text>
+                <Text style={{ color: "#666" }}>Role Anggota</Text>
+              </View>
             ))}
             <TouchableOpacity
               style={styles.groupInstaButton}
@@ -106,38 +116,53 @@ const ModalInfo: React.FC<ModalInfoProps> = ({ visible, onClose }) => {
 // --- KOMPONEN HOMESCREEN ---
 export default function HomeScreen() {
   const { state, dispatch } = useGameContext();
-
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
 
   const handlePlayPress = () => {
-    console.log("Mulai Main!");
     router.replace("/kamar");
   };
-
   const handleInfoPress = () => setIsInfoModalVisible(true);
   const handleSettingsPress = () => setSettingsModalVisible(true);
-
   const handleExitGame = () => {
     BackHandler.exitApp();
   };
 
+  // Deteksi Platform
+  const isWeb = Platform.OS === "web";
+
+  // --- WRAPPER BACKGROUND ---
+  const BackgroundWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (isWeb) {
+      return (
+        <ImageBackground
+          source={require("@/assets/images/homescreen_bg.png")}
+          style={styles.container}
+          resizeMode="cover"
+        >
+          {children}
+        </ImageBackground>
+      );
+    }
+    return (
+      <View style={styles.container}>
+        <Video
+          source={require("@/assets/bgvideo/pantai.mp4")}
+          style={StyleSheet.absoluteFill}
+          resizeMode={ResizeMode.COVER}
+          isLooping
+          shouldPlay
+          isMuted={true}
+        />
+        {children}
+      </View>
+    );
+  };
+
   return (
-    <View style={styles.container}>
+    <BackgroundWrapper>
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="auto" />
-
-      {/* --- VIDEO BACKGROUND --- */}
-      {/* Ganti nama file 'homescreen.mp4' sesuai file Anda */}
-      <Video
-        source={require("@/assets/bgvideo/pantai.mp4")}
-        style={StyleSheet.absoluteFill} // Mengisi seluruh layar
-        resizeMode={ResizeMode.COVER} // Memastikan video menutupi layar tanpa distorsi
-        isLooping // Video berulang terus
-        shouldPlay // Video otomatis main
-        isMuted={true} // Mute agar tidak tabrakan dengan musik BGM
-      />
-      {/* ------------------------ */}
 
       {/* Konten Utama */}
       <SafeAreaView style={styles.contentContainer} edges={["top"]}>
@@ -159,11 +184,18 @@ export default function HomeScreen() {
           >
             <Ionicons name="cog-outline" size={30} color="white" />
           </TouchableOpacity>
+
+          {/* JUDUL UTAMA */}
           <Image
             source={require("@/assets/images/culawarna_title.png")}
             style={styles.titleImage}
             resizeMode="contain"
           />
+
+          {/* TEKS TAMBAHAN DI BAWAH JUDUL */}
+          <Text style={styles.subtitleText}>
+            Media Pembelajaran Sosiologi Kelas 11 Kurikulum Merdeka
+          </Text>
         </View>
 
         {/* ZONA 2: LAUT (Tombol Play) */}
@@ -180,9 +212,7 @@ export default function HomeScreen() {
 
         {/* ZONA 3: PASIR (Karakter) */}
         <View style={styles.sandZone}>
-          {/* Gunakan Komponen Karakter Baru */}
-          {/* Hapus CulaCharacter jika belum membuat komponennya, 
-               atau ganti dengan Image biasa jika ingin gambar statis */}
+          {/* Menggunakan Karakter Dinamis */}
           <CulaCharacter style={styles.character} />
         </View>
       </SafeAreaView>
@@ -201,12 +231,11 @@ export default function HomeScreen() {
       >
         <BlurView
           intensity={10}
-          tint={Platform.OS === "web" ? "light" : "dark"}
+          tint={isWeb ? "light" : "dark"}
           style={styles.modalBackdrop}
         >
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Pengaturan</Text>
-
             <Text style={styles.sliderLabel}>Volume musik</Text>
             <Slider
               style={styles.slider}
@@ -220,7 +249,6 @@ export default function HomeScreen() {
               maximumTrackTintColor="#D3D3D3"
               thumbTintColor="#4B0082"
             />
-
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.kembaliButton]}
@@ -229,8 +257,7 @@ export default function HomeScreen() {
                 <Ionicons name="arrow-back" size={16} color="white" />
                 <Text style={styles.modalButtonText}>Kembali</Text>
               </TouchableOpacity>
-
-              {Platform.OS !== "web" && (
+              {!isWeb && (
                 <TouchableOpacity
                   style={[styles.modalButton, styles.keluarButton]}
                   onPress={handleExitGame}
@@ -243,7 +270,7 @@ export default function HomeScreen() {
           </View>
         </BlurView>
       </Modal>
-    </View>
+    </BackgroundWrapper>
   );
 }
 
@@ -251,31 +278,35 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "black", // Warna fallback jika video gagal load
+    backgroundColor: "black",
+    width: "100%",
+    height: "100%",
   },
-  contentContainer: {
-    flex: 1,
-  },
+  contentContainer: { flex: 1 },
+
   skyZone: {
     flex: 3,
     alignItems: "center",
     justifyContent: "center",
     paddingTop: Platform.OS === "web" ? 30 : 0,
   },
-  seaZone: {
-    flex: 2,
-    alignItems: "center",
-    justifyContent: "center",
+
+  // --- STYLE BARU UNTUK SUBTITLE ---
+  subtitleText: {
+    color: "blue",
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 5,
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    paddingHorizontal: 20, // Agar tidak terlalu mepet di layar kecil
   },
-  sandZone: {
-    flex: 5,
-  },
-  titleImage: {
-    width: "80%",
-    maxWidth: 400,
-    height: "60%",
-    minHeight: 100,
-  },
+
+  seaZone: { flex: 2, alignItems: "center", justifyContent: "center" },
+  sandZone: { flex: 5 },
+  titleImage: { width: "80%", maxWidth: 400, height: "50%", minHeight: 80 }, // Sedikit dikurangi height-nya agar muat teks
   playButton: {
     width: 80,
     height: 80,
@@ -287,9 +318,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.5)",
     cursor: "pointer",
   },
-  playIcon: {
-    marginLeft: 5,
-  },
+  playIcon: { marginLeft: 5 },
   character: {
     position: "absolute",
     bottom: 0,
@@ -313,16 +342,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.5)",
     cursor: "pointer",
   },
-  infoButton: {
-    left: 15,
-  },
-  settingsButton: {
-    right: 15,
-  },
+  infoButton: { left: 15 },
+  settingsButton: { right: 15 },
   modalBackdrop: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContainer: {
     width: "90%",
@@ -334,6 +360,7 @@ const styles = StyleSheet.create({
     borderColor: "#4A2A00",
     padding: 20,
     alignItems: "center",
+    elevation: 10,
   },
   modalTitle: {
     fontSize: 24,
@@ -341,16 +368,8 @@ const styles = StyleSheet.create({
     color: "#4A2A00",
     marginBottom: 20,
   },
-  sliderLabel: {
-    fontSize: 16,
-    color: "#4A2A00",
-    marginBottom: 10,
-  },
-  slider: {
-    width: "100%",
-    height: 40,
-    marginBottom: 20,
-  },
+  sliderLabel: { fontSize: 16, color: "#4A2A00", marginBottom: 10 },
+  slider: { width: "100%", height: 40, marginBottom: 20 },
   modalButtonRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -372,14 +391,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 5,
   },
-  kembaliButton: {
-    backgroundColor: "#8A2BE2",
-    borderColor: "#4B0082",
-  },
-  keluarButton: {
-    backgroundColor: "#DC143C",
-    borderColor: "#8B0000",
-  },
+  kembaliButton: { backgroundColor: "#8A2BE2", borderColor: "#4B0082" },
+  keluarButton: { backgroundColor: "#DC143C", borderColor: "#8B0000" },
   aboutText: {
     fontSize: 15,
     color: "#4A2A00",

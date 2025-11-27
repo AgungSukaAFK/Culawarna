@@ -1,24 +1,26 @@
 // Di dalam file: app/kuis/[bab].tsx
 
-import { CulaCharacter } from "@/app/components/CulaCharacter";
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
 import quizData from "@/app/data/quizData.json";
-import { QuizImages } from "@/app/utils/quizAssets"; // <-- Import Mapping Aset Baru
+import { QuizImages } from "@/app/utils/quizAssets";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Image,
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+// 1. Import Alert Custom
+import { CulaCharacter } from "@/app/components/CulaCharacter";
+import { CustomGameAlert } from "@/app/components/CustomGameAlert";
 
 type QuizDataKeys = keyof typeof quizData;
 
@@ -27,16 +29,21 @@ export default function KuisScreen() {
   const router = useRouter();
   const { dispatch } = useGameContext();
 
-  // --- STATE ---
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
 
-  // State Password
+  // 2. State untuk mengontrol Alert Custom
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    onClose: () => {}, // Fungsi yang dijalankan saat tombol OK ditekan
+  });
+
+  const [isFinished, setIsFinished] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const [inputPassword, setInputPassword] = useState("");
 
-  // Load Data
   const babKey = bab as QuizDataKeys;
   const selectedBab = bab && quizData[babKey] ? quizData[babKey] : null;
 
@@ -57,11 +64,16 @@ export default function KuisScreen() {
     if (inputPassword.toUpperCase() === correctPassword.toUpperCase()) {
       setIsLocked(false);
     } else {
-      Alert.alert(
-        "Password Salah",
-        "Silakan tanya gurumu untuk password yang benar!"
-      );
-      setInputPassword("");
+      // Ganti Alert Password Salah
+      setAlertConfig({
+        visible: true,
+        title: "Password Salah",
+        message: "Silakan tanya gurumu untuk password yang benar!",
+        onClose: () => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          setInputPassword("");
+        },
+      });
     }
   };
 
@@ -74,39 +86,60 @@ export default function KuisScreen() {
     let point = 0;
     if (isCorrect) {
       point = 1;
-      setScore(score + 1);
+      setScore((prev) => prev + 1);
     }
 
-    Alert.alert(
-      isCorrect ? "Benar! 🎉" : "Kurang Tepat 😅",
-      isCorrect ? "Jawabanmu tepat." : "Jangan menyerah!",
-      [{ text: "Lanjut", onPress: () => nextQuestion() }]
-    );
+    // 3. Ganti Alert.alert dengan CustomGameAlert
+    setAlertConfig({
+      visible: true,
+      title: isCorrect ? "Benar! 🎉" : "Kurang Tepat 😅",
+      message: isCorrect
+        ? "Jawabanmu tepat."
+        : "Jangan menyerah, coba lagi nanti!",
+      onClose: () => {
+        // Tutup alert dulu
+        setAlertConfig((prev) => ({ ...prev, visible: false }));
+        // Baru lanjut ke soal berikutnya
+        nextQuestion();
+      },
+    });
   };
 
   const nextQuestion = () => {
     if (currentQuestionIndex < selectedBab.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex((prev) => prev + 1);
     } else {
+      // Jika soal habis, finish quiz
       finishQuiz();
     }
   };
 
   const finishQuiz = () => {
+    // Dispatch data ke context (ini tidak mempengaruhi UI langsung)
+    // Kita pakai state score + 1 (jika jawaban terakhir benar) tapi karena logic async state,
+    // lebih aman kita hitung di akhir atau biarkan modal hasil yang handle.
+    // Di sini kita trigger modal hasil saja.
+
+    // Logic dispatch akan dipanggil saat tombol "Kembali ke Kelas" ditekan di modal hasil
+    // agar lebih aman secara flow.
     setIsFinished(true);
+  };
+
+  const handleFinalizeAndExit = () => {
+    // Dispatch ke context
     dispatch({
       type: "SUBMIT_KUIS",
       payload: {
         babId: selectedBab.id,
-        score: score,
+        score: score, // Score terakhir
       },
     });
+    setIsFinished(false);
+    router.replace("/kelas");
   };
 
   const currentQuestion = selectedBab.questions[currentQuestionIndex];
 
-  // --- LOGIKA GAMBAR SOAL ---
-  // Cek apakah ada properti 'image' di JSON dan apakah ada di mapping QuizImages
   const questionImageSource =
     "image" in currentQuestion && currentQuestion.image
       ? (QuizImages as any)[currentQuestion.image]
@@ -124,6 +157,14 @@ export default function KuisScreen() {
       }}
       pageModal={null}
     >
+      {/* --- 4. Render Custom Alert --- */}
+      <CustomGameAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={alertConfig.onClose}
+      />
+
       {/* --- MODAL PASSWORD --- */}
       <Modal
         visible={isLocked}
@@ -131,7 +172,11 @@ export default function KuisScreen() {
         animationType="fade"
         onRequestClose={handleCancelPassword}
       >
-        <BlurView intensity={20} style={styles.modalOverlay}>
+        <BlurView
+          intensity={20}
+          tint={Platform.OS === "web" ? "light" : "default"}
+          style={styles.modalOverlay}
+        >
           <View style={styles.passwordContainer}>
             <Text style={styles.passwordTitle}>🔒 Kuis Terkunci</Text>
             <Text style={styles.passwordSubtitle}>
@@ -178,7 +223,6 @@ export default function KuisScreen() {
 
           {/* KARTU PERTANYAAN */}
           <View style={styles.questionCard}>
-            {/* Tampilkan Gambar Soal Jika Ada */}
             {questionImageSource ? (
               <Image
                 source={questionImageSource}
@@ -186,7 +230,6 @@ export default function KuisScreen() {
                 resizeMode="contain"
               />
             ) : (
-              // Jika tidak ada gambar soal, tampilkan Si Cula (opsional)
               <CulaCharacter style={styles.hostImage} />
             )}
 
@@ -236,24 +279,26 @@ export default function KuisScreen() {
 
       {/* --- MODAL HASIL --- */}
       <Modal visible={isFinished} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
+        <BlurView
+          intensity={20}
+          tint={Platform.OS === "web" ? "light" : "dark"}
+          style={styles.modalOverlay}
+        >
           <View style={styles.resultCard}>
             <Text style={styles.resultTitle}>Kuis Selesai!</Text>
             <Text style={styles.resultSubtitle}>
               Kamu menjawab {score} dari {selectedBab.questions.length} soal
               dengan benar.
             </Text>
+            {/* Tombol ini sekarang menjalankan fungsi finalisasi */}
             <TouchableOpacity
               style={styles.finishButton}
-              onPress={() => {
-                setIsFinished(false);
-                router.replace("/kelas");
-              }}
+              onPress={handleFinalizeAndExit}
             >
               <Text style={styles.finishButtonText}>Kembali ke Kelas</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </BlurView>
       </Modal>
     </GameHUDLayout>
   );
@@ -306,13 +351,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  // Style Baru untuk Gambar Soal
   questionImage: {
     width: "100%",
-    height: 200, // Tinggi fix agar rapi
+    height: 200,
     marginBottom: 15,
     borderRadius: 10,
-    backgroundColor: "#f0f0f0", // Placeholder color saat loading
+    backgroundColor: "#f0f0f0",
   },
   hostImage: {
     width: 80,
@@ -343,7 +387,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
-  // Layout khusus Benar/Salah
   benarSalahRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -351,20 +394,19 @@ const styles = StyleSheet.create({
   },
   benarButton: {
     flex: 1,
-    backgroundColor: "#4ECDC4", // Hijau Tosca
+    backgroundColor: "#4ECDC4",
     borderColor: "#00796B",
   },
   salahButton: {
     flex: 1,
-    backgroundColor: "#FF6B6B", // Merah Muda
+    backgroundColor: "#FF6B6B",
     borderColor: "#B71C1C",
   },
   optionText: {
     fontSize: 16,
-    color: "#4A2A00", // Ubah ke Putih jika background gelap
+    color: "#4A2A00",
     fontWeight: "bold",
   },
-  // ... (Styles Password & Result sama seperti sebelumnya)
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",

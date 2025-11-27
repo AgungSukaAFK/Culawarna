@@ -1,11 +1,11 @@
 // Di dalam file: app/minigame/memory-food.tsx
 
+import { CustomGameAlert } from "@/app/components/CustomGameAlert"; // <-- Import Custom Alert
 import { useGameContext } from "@/app/context/GameContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Image,
   ImageBackground,
   ImageSourcePropType,
@@ -17,12 +17,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // --- 1. MAPPING ASET MAKANAN KHAS BANTEN ---
-// Mengambil langsung dari folder assets/images/foods/
 const foodAssets: { [key: string]: ImageSourcePropType } = {
   pecakbandeng: require("@/assets/images/foods/pecakbandeng.png"),
   rabeg: require("@/assets/images/foods/rabeg.png"),
   emping: require("@/assets/images/foods/emping.png"),
-  bintul: require("@/assets/images/foods/bintul.png"), // Ketan Bintul
+  bintul: require("@/assets/images/foods/bintul.png"),
   gipang: require("@/assets/images/foods/gipang.png"),
   bugis: require("@/assets/images/foods/bugis.png"),
 };
@@ -37,7 +36,6 @@ interface Card {
 }
 
 // --- KONFIGURASI LEVEL ---
-// Kita gunakan 6 pasang (Total 12 kartu) untuk grid 4x3
 const GAME_ITEMS = [
   { foodId: "pecakbandeng", image: foodAssets.pecakbandeng },
   { foodId: "rabeg", image: foodAssets.rabeg },
@@ -47,8 +45,8 @@ const GAME_ITEMS = [
   { foodId: "bugis", image: foodAssets.bugis },
 ];
 
-const KOIN_REWARD = 15; // Reward dinaikkan sedikit karena lebih menantang
-const GAME_TIME_SECONDS = 45; // Waktu bermain
+const KOIN_REWARD = 15;
+const GAME_TIME_SECONDS = 45;
 
 // Fungsi Acak (Fisher-Yates Shuffle)
 const shuffleArray = (array: any[]) => {
@@ -67,7 +65,6 @@ const shuffleArray = (array: any[]) => {
 
 // Membuat Papan Permainan
 const createGameBoard = (): Card[] => {
-  // Duplikasi item untuk membuat pasangan (pair)
   const pairedFoods = [...GAME_ITEMS, ...GAME_ITEMS];
   const shuffled = shuffleArray(pairedFoods);
 
@@ -90,6 +87,16 @@ export default function MemoryFoodScreen() {
   const [isGameActive, setIsGameActive] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [countdown, setCountdown] = useState<string | number>(3);
+
+  // --- STATE ALERT CUSTOM ---
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    icon: "information-circle" as any,
+    buttonText: "OK",
+    onClose: () => {},
+  });
 
   // --- SETUP AWAL & COUNTDOWN ---
   useEffect(() => {
@@ -114,13 +121,23 @@ export default function MemoryFoodScreen() {
   // --- TIMER ---
   useEffect(() => {
     if (!isGameActive) return;
+
+    // Jika waktu habis
     if (timeLeft <= 0) {
       setIsGameActive(false);
-      Alert.alert("Waktu Habis!", "Yah, waktu memasak habis!", [
-        { text: "Kembali", onPress: handleExitGame },
-      ]);
+
+      // Ganti Alert.alert
+      setAlertConfig({
+        visible: true,
+        title: "Waktu Habis! ⏰",
+        message: "Yah, waktu memasak habis! Coba lagi ya.",
+        icon: "time",
+        buttonText: "Kembali",
+        onClose: handleExitGame,
+      });
       return;
     }
+
     const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [isGameActive, timeLeft]);
@@ -167,11 +184,16 @@ export default function MemoryFoodScreen() {
     if (isGameActive && score === GAME_ITEMS.length) {
       setIsGameActive(false);
       dispatch({ type: "TAMBAH_KOIN", payload: KOIN_REWARD });
-      Alert.alert(
-        "Luar Biasa!",
-        `Kamu hafal semua menu!\n(+${KOIN_REWARD} Koin)`,
-        [{ text: "Ambil Koin", onPress: handleExitGame }]
-      );
+
+      // Ganti Alert.alert
+      setAlertConfig({
+        visible: true,
+        title: "Luar Biasa! 🏆",
+        message: `Kamu hafal semua menu!\n(+${KOIN_REWARD} Koin)`,
+        icon: "trophy",
+        buttonText: "Ambil Koin",
+        onClose: handleExitGame,
+      });
     }
   }, [score, isGameActive]);
 
@@ -201,6 +223,9 @@ export default function MemoryFoodScreen() {
   };
 
   const handleExitGame = () => {
+    // Pastikan alert tertutup sebelum navigasi
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
+
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
     router.back();
   };
@@ -211,6 +236,16 @@ export default function MemoryFoodScreen() {
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
+        {/* --- CUSTOM ALERT --- */}
+        <CustomGameAlert
+          visible={alertConfig.visible}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          icon={alertConfig.icon}
+          buttonText={alertConfig.buttonText}
+          onClose={alertConfig.onClose}
+        />
+
         {countdown ? (
           <View style={styles.countdownOverlay}>
             <Text style={styles.countdownText}>{countdown}</Text>

@@ -1,5 +1,6 @@
 // Di dalam file: app/toko.tsx
 
+import { CustomGameAlert } from "@/app/components/CustomGameAlert"; // <-- Import
 import { useGameContext } from "@/app/context/GameContext";
 import { Outfit } from "@/app/types/gameTypes";
 import {
@@ -8,9 +9,8 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
-  Alert,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -20,31 +20,29 @@ import {
   View,
 } from "react-native";
 
-// --- Tipe Item Toko ---
+// ... (Interface ShopItem & shopCategories TETAP SAMA, tidak perlu diubah) ...
 interface ShopItem {
   id: string;
   name: string;
   price: number;
   icon: React.ComponentProps<typeof FontAwesome5>["name"];
-  itemType: keyof Outfit; // 'bajuId', 'topiId', atau 'aksesorisId'
+  itemType: keyof Outfit;
 }
 
-// --- DAFTAR ITEM TOKO (Updated) ---
-// ID Item harus SAMA PERSIS dengan yang ada di characterAssets.ts & GameContext.tsx
 const shopCategories: { title: string; items: ShopItem[] }[] = [
   {
     title: "Pakaian Adat (Baju)",
     items: [
       {
         id: "baju-baduy",
-        name: "Baju Adat Baduy",
+        name: "Baju Pangsi Baduy",
         price: 150,
         icon: "tshirt",
         itemType: "bajuId",
       },
       {
         id: "baju-batik",
-        name: "Batik",
+        name: "Batik Banten",
         price: 200,
         icon: "tshirt",
         itemType: "bajuId",
@@ -58,7 +56,6 @@ const shopCategories: { title: string; items: ShopItem[] }[] = [
       },
     ],
   },
-  // Kategori Topi DIHAPUS
   {
     title: "Dekorasi Ruang Tamu",
     items: [
@@ -77,69 +74,108 @@ export default function TokoScreen() {
   const router = useRouter();
   const { state, dispatch } = useGameContext();
 
-  // Cek apakah item sudah dimiliki
+  // State untuk mengontrol Alert
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    icon: "information-circle" as any,
+    buttonText: "OK",
+    showCancel: false,
+    onClose: () => {},
+  });
+
+  // Helper tutup alert
+  const closeAlert = () =>
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
+
   const checkIsOwned = (item: ShopItem): boolean => {
-    if (item.itemType === "bajuId") {
-      return state.ownedBaju.includes(item.id);
-    }
-    // Topi dihapus, tapi logic dibiarkan aman
-    if (item.itemType === "topiId") {
-      return state.ownedTopi.includes(item.id);
-    }
-    if (item.itemType === "aksesorisId") {
+    if (item.itemType === "bajuId") return state.ownedBaju.includes(item.id);
+    if (item.itemType === "topiId") return state.ownedTopi.includes(item.id);
+    if (item.itemType === "aksesorisId")
       return state.ownedAksesoris.includes(item.id);
-    }
     return false;
   };
 
   const handleBeli = (item: ShopItem) => {
-    // 1. Cek apakah sudah dimiliki
+    // 1. Cek Milik
     if (checkIsOwned(item)) {
-      Alert.alert("Sudah Dimiliki", "Kamu sudah memiliki item ini.");
+      setAlertConfig({
+        visible: true,
+        title: "Sudah Punya",
+        message: "Kamu sudah memiliki item ini di koleksimu.",
+        icon: "checkmark-circle",
+        buttonText: "OK",
+        showCancel: false,
+        onClose: closeAlert,
+      });
       return;
     }
 
-    // 2. Cek koin
+    // 2. Cek Koin
     if (state.koin < item.price) {
-      Alert.alert(
-        "Koin Tidak Cukup",
-        "Kumpulkan koin lagi dari minigame di Pantai!"
-      );
+      setAlertConfig({
+        visible: true,
+        title: "Uang Kurang",
+        message: `Koinmu tidak cukup (${state.koin}/${item.price}).\nMainkan minigame di Pantai yuk!`,
+        icon: "alert-circle",
+        buttonText: "Oke",
+        showCancel: false,
+        onClose: closeAlert,
+      });
       return;
     }
 
-    // 3. Tampilkan konfirmasi
-    Alert.alert(
-      "Konfirmasi Pembelian",
-      `Beli ${item.name} seharga ${item.price} koin?`,
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Beli",
-          onPress: () => {
-            // 4. Kurangi koin
-            dispatch({ type: "KURANGI_KOIN", payload: item.price });
+    // 3. Konfirmasi Beli (Alert 2 Tombol)
+    setAlertConfig({
+      visible: true,
+      title: "Beli Item?",
+      message: `Beli ${item.name} seharga ${item.price} Koin?`,
+      icon: "cart",
+      buttonText: "Beli",
+      showCancel: true, // Tampilkan tombol batal
+      onClose: () => {
+        // Aksi BELI
+        dispatch({ type: "KURANGI_KOIN", payload: item.price });
+        dispatch({
+          type: "BELI_ITEM",
+          payload: { itemId: item.id, itemType: item.itemType },
+        });
+        closeAlert();
 
-            // 5. Tambahkan ke inventory
-            dispatch({
-              type: "BELI_ITEM",
-              payload: { itemId: item.id, itemType: item.itemType },
-            });
-
-            // 6. Beri notifikasi sukses
-            Alert.alert(
-              "Berhasil Dibeli!",
-              `${item.name} telah ditambahkan ke Lemari/Dekorasi.`
-            );
-          },
-        },
-      ]
-    );
+        // Alert Sukses (Chained)
+        setTimeout(() => {
+          setAlertConfig({
+            visible: true,
+            title: "Berhasil!",
+            message: `${item.name} berhasil dibeli.`,
+            icon: "checkmark-done-circle",
+            buttonText: "Mantap",
+            showCancel: false,
+            onClose: () =>
+              setAlertConfig((prev) => ({ ...prev, visible: false })),
+          });
+        }, 300);
+      },
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+
+      {/* --- RENDER CUSTOM ALERT DI SINI --- */}
+      <CustomGameAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        icon={alertConfig.icon}
+        buttonText={alertConfig.buttonText}
+        onClose={alertConfig.onClose}
+        // Render onCancel hanya jika showCancel true
+        onCancel={alertConfig.showCancel ? closeAlert : undefined}
+        cancelText="Batal"
+      />
 
       {/* Header */}
       <View style={styles.header}>
@@ -147,7 +183,6 @@ export default function TokoScreen() {
           <Ionicons name="arrow-back" size={30} color="#4A2A00" />
         </TouchableOpacity>
         <Text style={styles.title}>Toko Budaya</Text>
-        {/* Koin Display */}
         <View style={styles.koinContainer}>
           <MaterialCommunityIcons name="gold" size={20} color="#4A2A00" />
           <Text style={styles.koinText}>{state.koin}</Text>
@@ -155,7 +190,6 @@ export default function TokoScreen() {
       </View>
 
       <ScrollView style={styles.scrollContainer}>
-        {/* Render Kategori */}
         {shopCategories.map((category) => (
           <View key={category.title}>
             <Text style={styles.categoryTitle}>{category.title}</Text>
@@ -166,25 +200,17 @@ export default function TokoScreen() {
               return (
                 <View
                   key={item.id}
-                  style={[
-                    styles.itemContainer,
-                    isOwned && styles.itemOwned, // Style beda jika sudah punya
-                  ]}
+                  style={[styles.itemContainer, isOwned && styles.itemOwned]}
                 >
-                  {/* Ikon Item */}
                   <View style={styles.iconBox}>
                     <FontAwesome5 name={item.icon} size={30} color="#4A2A00" />
                   </View>
-
-                  {/* Info Item */}
                   <View style={styles.itemInfo}>
                     <Text style={styles.itemName}>{item.name}</Text>
                     <Text style={styles.itemPrice}>
                       {isOwned ? "Sudah dimiliki" : `${item.price} Koin`}
                     </Text>
                   </View>
-
-                  {/* Tombol Beli */}
                   <TouchableOpacity
                     style={[
                       styles.buyButton,
@@ -212,6 +238,7 @@ export default function TokoScreen() {
   );
 }
 
+// ... (Styles TETAP SAMA seperti sebelumnya, copy paste saja styles lama)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -228,11 +255,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderColor: "#4A2A00",
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#4A2A00",
-  },
+  title: { fontSize: 22, fontWeight: "bold", color: "#4A2A00" },
   koinContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -249,10 +272,7 @@ const styles = StyleSheet.create({
     color: "#4A2A00",
     marginLeft: 5,
   },
-  scrollContainer: {
-    flex: 1,
-    padding: 15,
-  },
+  scrollContainer: { flex: 1, padding: 15 },
   categoryTitle: {
     fontSize: 20,
     fontWeight: "bold",
@@ -289,36 +309,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#DEB887",
   },
-  itemInfo: {
-    flex: 1,
-  },
-  itemName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#4A2A00",
-  },
-  itemPrice: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
+  itemInfo: { flex: 1 },
+  itemName: { fontSize: 18, fontWeight: "bold", color: "#4A2A00" },
+  itemPrice: { fontSize: 14, color: "#666", marginTop: 4 },
   buyButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
     borderBottomWidth: 3,
   },
-  buyButtonActive: {
-    backgroundColor: "#28a745", // Hijau
-    borderColor: "#1e7e34",
-  },
-  disabledButton: {
-    backgroundColor: "#6c757d", // Abu-abu
-    borderColor: "#4a5258",
-  },
-  buyButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
+  buyButtonActive: { backgroundColor: "#28a745", borderColor: "#1e7e34" },
+  disabledButton: { backgroundColor: "#6c757d", borderColor: "#4a5258" },
+  buyButtonText: { color: "white", fontWeight: "bold", fontSize: 14 },
 });

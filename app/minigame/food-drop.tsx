@@ -1,13 +1,13 @@
 // Di dalam file: app/minigame/food-drop.tsx
 
-import { CulaCharacter } from "@/app/components/CulaCharacter"; // <-- Import Karakter Pintar
+import { CulaCharacter } from "@/app/components/CulaCharacter";
+import { CustomGameAlert } from "@/app/components/CustomGameAlert"; // <-- Import Custom Alert
 import { useGameContext } from "@/app/context/GameContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { router } from "expo-router";
 import React, { memo, useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Dimensions,
   Image,
   ImageBackground,
@@ -42,13 +42,13 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const PLAYER_WIDTH = 120;
 const PLAYER_HEIGHT = 120;
-const OBJECT_SIZE = 50; // Sedikit diperbesar agar makanan terlihat jelas
+const OBJECT_SIZE = 50;
 const GAME_TIME_SECONDS = 30;
 const KOIN_PER_FOOD = 2;
-const FALL_SPEED_MIN = 2.5; // Sedikit lebih cepat
+const FALL_SPEED_MIN = 2.5;
 const FALL_SPEED_MAX = 6;
-const BOMB_CHANCE = 0.25; // 25% kemungkinan bom
-const SPAWN_INTERVAL_MS = 1000; // Spawn lebih sering
+const BOMB_CHANCE = 0.25;
+const SPAWN_INTERVAL_MS = 1000;
 
 // --- ASET MAKANAN ---
 const foodAssets: { [key: string]: ImageSourcePropType } = {
@@ -86,13 +86,12 @@ const FallingObjectComponent: React.FC<{
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
-  // Animasi Jatuh
   useEffect(() => {
     if (isGameActive.value) {
       y.value = withTiming(
         SCREEN_HEIGHT + OBJECT_SIZE,
         {
-          duration: (SCREEN_HEIGHT / speed) * 15, // Faktor kecepatan disesuaikan
+          duration: (SCREEN_HEIGHT / speed) * 15,
           easing: Easing.linear,
         },
         (finished) => {
@@ -104,14 +103,12 @@ const FallingObjectComponent: React.FC<{
     }
   }, [isGameActive.value, y, speed, id, onMiss, isCaught]);
 
-  // Deteksi Tabrakan (Collision Detection)
   useFrameCallback(() => {
     if (!isGameActive.value || isCaught.value) return;
 
     const pX = playerX.value;
     const oY = y.value;
 
-    // Hitbox Pemain (Kepala)
     const playerBottomMargin = 30;
     const playerHeadHitbox = 50;
     const playerHorizontalPadding = 25;
@@ -139,7 +136,6 @@ const FallingObjectComponent: React.FC<{
       isCaught.value = true;
 
       if (type === "bomb") {
-        // Efek Ledakan
         scale.value = withSequence(
           withTiming(1.8, { duration: 100 }),
           withTiming(0, { duration: 150 })
@@ -147,7 +143,6 @@ const FallingObjectComponent: React.FC<{
         opacity.value = withDelay(50, withTiming(0, { duration: 200 }));
         runOnJS(onBomb)();
       } else {
-        // Tertangkap
         opacity.value = 0;
         runOnJS(onCatch)(id);
       }
@@ -178,6 +173,16 @@ export default function FoodDropScreen() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [countdown, setCountdown] = useState<string | number>(3);
 
+  // --- STATE ALERT CUSTOM ---
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    icon: "information-circle" as any,
+    buttonText: "OK",
+    onClose: () => {},
+  });
+
   const playerX = useSharedValue(SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2);
   const isGameActiveSV = useSharedValue(false);
   const objectIdCounter = useRef(0);
@@ -185,7 +190,6 @@ export default function FoodDropScreen() {
   const sfxCatchRef = useRef<Audio.Sound | null>(null);
   const sfxBombRef = useRef<Audio.Sound | null>(null);
 
-  // --- SETUP AUDIO & COUNTDOWN ---
   useEffect(() => {
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: true });
 
@@ -227,13 +231,11 @@ export default function FoodDropScreen() {
     };
   }, []);
 
-  // --- UPDATE VOLUME ---
   useEffect(() => {
     sfxCatchRef.current?.setVolumeAsync(state.volume);
     sfxBombRef.current?.setVolumeAsync(state.volume);
   }, [state.volume]);
 
-  // --- TIMER ---
   useEffect(() => {
     if (!isGameActive || isGameOver) return;
     if (timeLeft <= 0) {
@@ -246,13 +248,10 @@ export default function FoodDropScreen() {
     return () => clearInterval(timer);
   }, [isGameActive, isGameOver, timeLeft]);
 
-  // --- SPAWNER OBJEK ---
   useEffect(() => {
     if (!isGameActive || isGameOver) return;
     const spawnTimer = setInterval(() => {
       const type = Math.random() < BOMB_CHANCE ? "bomb" : "food";
-
-      // Pilih gambar acak
       let image;
       if (type === "bomb") {
         image = bombAsset;
@@ -275,7 +274,6 @@ export default function FoodDropScreen() {
     return () => clearInterval(spawnTimer);
   }, [isGameActive, isGameOver]);
 
-  // --- GESTURE ---
   const gesture = Gesture.Pan()
     .onChange((e) => {
       const newX = playerX.value + e.changeX;
@@ -307,6 +305,7 @@ export default function FoodDropScreen() {
     setObjects((prev) => prev.filter((obj) => obj.id !== id));
   };
 
+  // --- HANDLE GAME OVER (Updated Alert) ---
   const handleGameOver = () => {
     if (isGameOver) return;
     playBombSound();
@@ -314,11 +313,19 @@ export default function FoodDropScreen() {
     setIsGameActive(false);
     isGameActiveSV.value = false;
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
-    Alert.alert("BOOM!", "Kamu terkena bom! Hati-hati ya.", [
-      { text: "Kembali", onPress: () => router.back() },
-    ]);
+
+    // Ganti Alert.alert
+    setAlertConfig({
+      visible: true,
+      title: "BOOM! 💥",
+      message: "Kamu terkena bom! Hati-hati ya.",
+      icon: "flame", // Icon api
+      buttonText: "Kembali",
+      onClose: () => router.back(),
+    });
   };
 
+  // --- HANDLE GAME WIN (Updated Alert) ---
   const handleGameWin = () => {
     if (isGameOver) return;
     setIsGameOver(true);
@@ -327,11 +334,16 @@ export default function FoodDropScreen() {
     const koinWon = score * KOIN_PER_FOOD;
     dispatch({ type: "TAMBAH_KOIN", payload: koinWon });
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
-    Alert.alert(
-      "Selesai!",
-      `Kamu menangkap ${score} makanan!\n(+${koinWon} Koin)`,
-      [{ text: "Mantap", onPress: () => router.back() }]
-    );
+
+    // Ganti Alert.alert
+    setAlertConfig({
+      visible: true,
+      title: "Waktu Habis! ⏰",
+      message: `Kamu menangkap ${score} makanan!\n(+${koinWon} Koin)`,
+      icon: "trophy", // Icon piala
+      buttonText: "Mantap",
+      onClose: () => router.back(),
+    });
   };
 
   return (
@@ -341,6 +353,16 @@ export default function FoodDropScreen() {
         style={styles.container}
       >
         <SafeAreaView style={styles.safeArea}>
+          {/* --- Render Custom Alert --- */}
+          <CustomGameAlert
+            visible={alertConfig.visible}
+            title={alertConfig.title}
+            message={alertConfig.message}
+            icon={alertConfig.icon}
+            buttonText={alertConfig.buttonText}
+            onClose={alertConfig.onClose}
+          />
+
           {countdown ? (
             <View style={styles.countdownOverlay}>
               <Text style={styles.countdownText}>{countdown}</Text>
@@ -370,7 +392,6 @@ export default function FoodDropScreen() {
 
                 <GestureDetector gesture={gesture}>
                   <Animated.View style={[styles.player, playerAnimatedStyle]}>
-                    {/* Gunakan Karakter Pintar agar baju sesuai */}
                     <CulaCharacter style={styles.playerImage} />
                   </Animated.View>
                 </GestureDetector>

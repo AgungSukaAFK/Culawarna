@@ -30,41 +30,35 @@ interface ShopItem {
 }
 
 // --- DAFTAR ITEM TOKO (Updated) ---
-// Pastikan ID di sini SAMA PERSIS dengan di characterAssets.ts
+// ID Item harus SAMA PERSIS dengan yang ada di characterAssets.ts & GameContext.tsx
 const shopCategories: { title: string; items: ShopItem[] }[] = [
   {
     title: "Pakaian Adat (Baju)",
     items: [
       {
-        id: "baju-baduy", // ID harus sama dengan logic karakter
-        name: "Baju Pangsi Baduy",
+        id: "baju-baduy",
+        name: "Baju Adat Baduy",
         price: 150,
         icon: "tshirt",
         itemType: "bajuId",
       },
       {
-        id: "baju-batik", // Item Baru: Batik
-        name: "Batik Banten",
+        id: "baju-batik",
+        name: "Batik",
         price: 200,
+        icon: "tshirt",
+        itemType: "bajuId",
+      },
+      {
+        id: "baju-minang",
+        name: "Baju Adat Minang",
+        price: 250,
         icon: "tshirt",
         itemType: "bajuId",
       },
     ],
   },
-  {
-    title: "Aksesoris Kepala",
-    items: [
-      {
-        id: "peci-hitam", // Item Baru: Peci
-        name: "Peci Nasional",
-        price: 50,
-        icon: "hat-wizard", // Ikon placeholder
-        itemType: "topiId",
-      },
-      // Jika nanti ada Caping:
-      // { id: "caping-petani", name: "Caping Petani", price: 75, icon: "hat-cowboy", itemType: "topiId" },
-    ],
-  },
+  // Kategori Topi DIHAPUS
   {
     title: "Dekorasi Ruang Tamu",
     items: [
@@ -88,6 +82,7 @@ export default function TokoScreen() {
     if (item.itemType === "bajuId") {
       return state.ownedBaju.includes(item.id);
     }
+    // Topi dihapus, tapi logic dibiarkan aman
     if (item.itemType === "topiId") {
       return state.ownedTopi.includes(item.id);
     }
@@ -134,7 +129,7 @@ export default function TokoScreen() {
             // 6. Beri notifikasi sukses
             Alert.alert(
               "Berhasil Dibeli!",
-              `${item.name} telah ditambahkan ke Lemari.`
+              `${item.name} telah ditambahkan ke Lemari/Dekorasi.`
             );
           },
         },

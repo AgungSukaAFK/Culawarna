@@ -1,5 +1,4 @@
 // Di dalam file: app/context/GameContext.tsx
-// (PERBARUI FILE ANDA)
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
@@ -9,7 +8,7 @@ import React, {
   useEffect,
   useReducer,
 } from "react";
-// Impor semua tipe dari file baru
+// Impor tipe
 import {
   CulaPhase,
   GameAction,
@@ -19,27 +18,44 @@ import {
 } from "@/app/types/gameTypes";
 
 // --- Konstanta ---
-const STORAGE_KEY = "@CulawarnaGame:SaveData";
+const STORAGE_KEY = "@CulawarnaGame:SaveData_V"; // Ganti version biar fresh
 const COOK_TIME_MS = 3 * 60 * 1000;
-const XP_PER_LEVEL = 10;
+const XP_PER_LEVEL = 10; // XP yang dibutuhkan untuk naik level
 const KUIS_ENERGY_COST = 25;
 
-// --- STATE AWAL (Diperbarui) ---
+// --- HELPER: Mapping Bab ke Fase ---
+const babPhaseMap: { [key: string]: CulaPhase } = {
+  bab1: "Baby",
+  bab2: "Anak",
+  bab3: "Remaja",
+  bab4: "Dewasa",
+};
+
+// --- HELPER: Urutan Fase (untuk perbandingan) ---
+const phaseOrder: { [key in CulaPhase]: number } = {
+  Baby: 1,
+  Anak: 2,
+  Remaja: 3,
+  Dewasa: 4,
+};
+
+// --- STATE AWAL ---
 const initialState: GameState = {
   xp: 0,
   xpToNextLevel: XP_PER_LEVEL,
-  koin: 15, // Ubah jadi 1500 untuk testing toko jika mau
+  koin: 15,
   energi: 100,
   maxEnergi: 100,
   volume: 1,
-  phase: "Baby", // Default awal
+  phase: "Baby",
+  selectedAppearance: "Default",
   currentOutfit: {
-    bajuId: null, // null artinya tidak pakai baju (Base)
+    bajuId: null,
     topiId: null,
     aksesorisId: null,
   },
+  // Inventory Makanan (Sesuai update sebelumnya)
   foodInventory: {
-    // BABY
     mutiara: {
       id: "mutiara",
       name: "Bubur Mutiara",
@@ -49,7 +65,7 @@ const initialState: GameState = {
       cost: 5,
       cookingStartTime: 0,
       isCooking: false,
-      cookDuration: COOK_TIME_MS,
+      cookDuration: 10000,
     },
     kue: {
       id: "kue",
@@ -60,10 +76,8 @@ const initialState: GameState = {
       cost: 8,
       cookingStartTime: 0,
       isCooking: false,
-      cookDuration: COOK_TIME_MS,
+      cookDuration: 10000,
     },
-
-    // ANAK
     gipang: {
       id: "gipang",
       name: "Gipang Kacang",
@@ -73,7 +87,7 @@ const initialState: GameState = {
       cost: 10,
       cookingStartTime: 0,
       isCooking: false,
-      cookDuration: COOK_TIME_MS,
+      cookDuration: 10000,
     },
     bugis: {
       id: "bugis",
@@ -84,10 +98,8 @@ const initialState: GameState = {
       cost: 12,
       cookingStartTime: 0,
       isCooking: false,
-      cookDuration: COOK_TIME_MS,
+      cookDuration: 10000,
     },
-
-    // REMAJA
     bintul: {
       id: "bintul",
       name: "Ketan Bintul",
@@ -97,7 +109,7 @@ const initialState: GameState = {
       cost: 15,
       cookingStartTime: 0,
       isCooking: false,
-      cookDuration: COOK_TIME_MS,
+      cookDuration: 10000,
     },
     emping: {
       id: "emping",
@@ -108,10 +120,8 @@ const initialState: GameState = {
       cost: 15,
       cookingStartTime: 0,
       isCooking: false,
-      cookDuration: COOK_TIME_MS,
+      cookDuration: 10000,
     },
-
-    // DEWASA
     rabeg: {
       id: "rabeg",
       name: "Rabeg Banten",
@@ -121,7 +131,7 @@ const initialState: GameState = {
       cost: 25,
       cookingStartTime: 0,
       isCooking: false,
-      cookDuration: COOK_TIME_MS * 2,
+      cookDuration: 20000,
     },
     pecakbandeng: {
       id: "pecakbandeng",
@@ -132,7 +142,7 @@ const initialState: GameState = {
       cost: 30,
       cookingStartTime: 0,
       isCooking: false,
-      cookDuration: COOK_TIME_MS * 2,
+      cookDuration: 20000,
     },
   },
   materiProgress: {
@@ -145,54 +155,22 @@ const initialState: GameState = {
   lastQuizTimestamp: 0,
   isLoading: true,
   isMinigameActive: false,
-
-  // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
-  ownedBaju: ["baju-baduy", "baju-batik"],
+  ownedBaju: ["baju-baduy", "baju-batik", "baju-minang"],
   ownedTopi: ["peci-hitam"],
   ownedAksesoris: [],
-  // ----------------------------------------
 };
 
-// ... (Helper tetap sama) ...
-// --- HELPER UNTUK LOGIKA XP ---
-const babPhaseMap: { [key: string]: CulaPhase } = {
-  bab1: "Baby",
-  bab2: "Anak",
-  bab3: "Remaja",
-  bab4: "Dewasa",
-};
-
-const phaseOrder: { [key in CulaPhase]: number } = {
-  Baby: 1,
-  Anak: 2,
-  Remaja: 3,
-  Dewasa: 4,
-};
-// --- AKHIR HELPER ---
-
-// --- REDUCER (Diperbarui) ---
+// --- REDUCER ---
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case "SET_LOADING":
       return { ...state, isLoading: action.payload };
-
     case "SET_VOLUME":
-      return {
-        ...state,
-        volume: action.payload,
-      };
-
+      return { ...state, volume: action.payload };
     case "LOAD_STATE":
       return { ...initialState, ...action.payload, isLoading: false };
-
-    // ... (case 'TAMBAH_XP' s/d 'REFILL_MAKANAN' tetap sama) ...
-    case "TAMBAH_XP": {
-      // Ini sekarang hanya untuk debug, tidak ada evolusi
-      return {
-        ...state,
-        xp: state.xp + action.payload,
-      };
-    }
+    case "TAMBAH_XP":
+      return { ...state, xp: state.xp + action.payload };
     case "GUNAKAN_ENERGI":
       return { ...state, energi: Math.max(0, state.energi - action.payload) };
     case "TAMBAH_ENERGI":
@@ -204,6 +182,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return { ...state, koin: state.koin + action.payload };
     case "KURANGI_KOIN":
       return { ...state, koin: Math.max(0, state.koin - action.payload) };
+
     case "GANTI_OUTFIT":
       return {
         ...state,
@@ -212,6 +191,13 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           [action.payload.itemType]: action.payload.itemId,
         },
       };
+    case "SET_APPEARANCE":
+      return {
+        ...state,
+        selectedAppearance: action.payload,
+      };
+
+    // --- LOGIKA MAKANAN ---
     case "KONSUMSI_MAKANAN": {
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
@@ -225,59 +211,30 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         },
       };
     }
-    case "BELI_MAKANAN": {
+    case "MULAI_MASAK": {
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
+      const cookingCount = Object.values(state.foodInventory).filter(
+        (f) => f.isCooking
+      ).length;
       if (
-        !item ||
-        state.koin < item.cost ||
-        item.currentStacks >= item.maxStacks
+        cookingCount >= 2 ||
+        item.currentStacks >= item.maxStacks ||
+        item.isCooking
       )
         return state;
       return {
         ...state,
-        koin: state.koin - item.cost,
         foodInventory: {
           ...state.foodInventory,
-          [foodId]: { ...item, currentStacks: item.currentStacks + 1 },
+          [foodId]: { ...item, isCooking: true, cookingStartTime: Date.now() },
         },
       };
     }
-    case "MULAI_MASAK": {
-      const { foodId } = action.payload;
-      const item = state.foodInventory[foodId];
-
-      // 1. Hitung berapa yg sedang dimasak
-      const cookingCount = Object.values(state.foodInventory).filter(
-        (f) => f.isCooking
-      ).length;
-
-      // 2. Cek validasi (Slot penuh? Stok penuh? Sedang masak?)
-      if (cookingCount >= 2) {
-        // Alert akan dihandle di UI, di sini kita return state aja
-        return state;
-      }
-      if (item.currentStacks >= item.maxStacks || item.isCooking) return state;
-
-      return {
-        ...state,
-        foodInventory: {
-          ...state.foodInventory,
-          [foodId]: {
-            ...item,
-            isCooking: true,
-            cookingStartTime: Date.now(),
-          },
-        },
-      };
-    }
-
     case "AMBIL_MASAKAN": {
       const { foodId } = action.payload;
       const item = state.foodInventory[foodId];
-
       if (!item.isCooking) return state;
-
       return {
         ...state,
         foodInventory: {
@@ -292,59 +249,77 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
     }
 
-    // ... (case 'START_KUIS' dan 'SUBMIT_KUIS' tetap sama) ...
     case "START_KUIS":
       return {
         ...state,
         energi: Math.max(0, state.energi - KUIS_ENERGY_COST),
         lastQuizTimestamp: Date.now(),
       };
+
+    // --- REVISI LOGIKA SUBMIT KUIS (ANTI-FARMING) ---
     case "SUBMIT_KUIS": {
-      // ... (logika submit kuis tetap sama) ...
       const { babId, score } = action.payload;
+
+      // 1. Simpan History
       const newHistory: QuizAttempt = {
         babId,
         score,
-        total: 10,
+        total: 10, // Asumsi total soal 10 (atau sesuaikan dengan data real)
         timestamp: Date.now(),
-        passed: score === 10,
+        passed: score >= 6, // Lulus jika >= 6
       };
-      const intendedPhase = babPhaseMap[babId];
-      const playerPhase = state.phase;
-      const xpGained =
-        phaseOrder[playerPhase] > phaseOrder[intendedPhase] ? 0 : score;
+
+      // 2. Cek Level Farming
+      const intendedPhase = babPhaseMap[babId]; // Fase target kuis ini (misal Bab 1 = Baby)
+      const playerPhase = state.phase; // Fase pemain saat ini (misal Anak)
+
+      // Hitung urutan fase
+      const playerRank = phaseOrder[playerPhase];
+      const quizRank = phaseOrder[intendedPhase];
+
+      // Jika Rank Pemain > Rank Kuis, XP = 0
+      // (Contoh: Anak (2) mengerjakan Kuis Baby (1) -> Tidak dapat XP)
+      const xpGained = playerRank > quizRank ? 0 : score;
+
       console.log(
-        `Fase Pemain: ${playerPhase}, Fase Kuis: ${intendedPhase}. XP didapat: ${xpGained}`
+        `Fase Pemain: ${playerPhase} (${playerRank}), Kuis: ${intendedPhase} (${quizRank}). XP: ${xpGained}`
       );
+
+      // 3. Tambah XP & Cek Evolusi
       let newXp = state.xp + xpGained;
       let newPhase = state.phase;
       let newProgress = state.materiProgress;
-      if (xpGained > 0 && newXp >= state.xpToNextLevel) {
-        newXp = newXp - state.xpToNextLevel;
-        console.log("NAIK LEVEL!");
+
+      // Jika XP cukup untuk naik level
+      if (newXp >= state.xpToNextLevel) {
+        newXp = newXp - state.xpToNextLevel; // Reset XP (carry over)
+
+        // Logika Evolusi Berjenjang
         if (state.phase === "Baby") {
           newPhase = "Anak";
+          // Unlock Bab 2
           newProgress = {
             ...newProgress,
             bab2: { ...newProgress.bab2, unlocked: true },
           };
-          console.log("EVOLUSI KE ANAK!");
         } else if (state.phase === "Anak") {
           newPhase = "Remaja";
+          // Unlock Bab 3
           newProgress = {
             ...newProgress,
             bab3: { ...newProgress.bab3, unlocked: true },
           };
-          console.log("EVOLUSI KE REMAJA!");
         } else if (state.phase === "Remaja") {
           newPhase = "Dewasa";
+          // Unlock Bab 4
           newProgress = {
             ...newProgress,
             bab4: { ...newProgress.bab4, unlocked: true },
           };
-          console.log("EVOLUSI KE DEWASA!");
         }
+        // Fase Dewasa sudah mentok
       }
+
       return {
         ...state,
         xp: newXp,
@@ -357,50 +332,34 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
     }
 
-    case "EVOLVE_CULA": {
-      return state;
-    }
-
     case "SET_MINIGAME_ACTIVE":
-      return {
-        ...state,
-        isMinigameActive: action.payload,
-      };
+      return { ...state, isMinigameActive: action.payload };
 
-    // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
     case "BELI_ITEM": {
       const { itemId, itemType } = action.payload;
-
       if (itemType === "bajuId") {
-        if (state.ownedBaju.includes(itemId)) return state; // Sudah punya
+        if (state.ownedBaju.includes(itemId)) return state;
         return { ...state, ownedBaju: [...state.ownedBaju, itemId] };
       }
       if (itemType === "topiId") {
-        if (state.ownedTopi.includes(itemId)) return state; // Sudah punya
+        if (state.ownedTopi.includes(itemId)) return state;
         return { ...state, ownedTopi: [...state.ownedTopi, itemId] };
       }
       if (itemType === "aksesorisId") {
-        if (state.ownedAksesoris.includes(itemId)) return state; // Sudah punya
-        return {
-          ...state,
-          ownedAksesoris: [...state.ownedAksesoris, itemId],
-        };
+        if (state.ownedAksesoris.includes(itemId)) return state;
+        return { ...state, ownedAksesoris: [...state.ownedAksesoris, itemId] };
       }
       return state;
     }
-    // ----------------------------------------
 
     default:
       return state;
   }
 };
 
-// ... (Sisa file, Provider, dan Hook tetap sama) ...
-
-// --- 4. CREATE CONTEXT ---
+// --- PROVIDER & HOOK (Tetap Sama) ---
 const GameContext = createContext<GameContextProps | undefined>(undefined);
 
-// --- 5. PROVIDER COMPONENT ---
 export const GameProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -444,7 +403,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
   );
 };
 
-// --- 6. CUSTOM HOOK ---
 export const useGameContext = () => {
   const context = useContext(GameContext);
   if (context === undefined) {

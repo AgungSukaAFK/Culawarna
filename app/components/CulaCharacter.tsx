@@ -1,4 +1,5 @@
-// File: app/components/CulaCharacter.tsx
+// Di dalam file: app/components/CulaCharacter.tsx
+
 import { useGameContext } from "@/app/context/GameContext";
 import { getCulaImage } from "@/app/utils/characterAssets";
 import React from "react";
@@ -10,11 +11,16 @@ interface CulaCharacterProps {
 
 export const CulaCharacter: React.FC<CulaCharacterProps> = ({ style }) => {
   const { state } = useGameContext();
-  const { phase, currentOutfit } = state;
+  const { phase, currentOutfit, selectedAppearance } = state;
 
-  // Ambil gambar yang sesuai dari helper
+  // LOGIKA UTAMA:
+  // Jika user memilih "Default", gunakan fase asli (state.phase).
+  // Jika user memilih spesifik (misal "Baby"), gunakan pilihan itu (selectedAppearance).
+  const displayPhase =
+    selectedAppearance === "Default" ? phase : selectedAppearance;
+
   const imageSource = getCulaImage(
-    phase,
+    displayPhase,
     currentOutfit.bajuId,
     currentOutfit.topiId
   );

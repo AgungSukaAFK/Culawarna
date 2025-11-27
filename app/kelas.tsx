@@ -1,35 +1,24 @@
 // Di dalam file: app/kelas.tsx
-// (KODE LENGKAP - GANTI SELURUH FILE ANDA DENGAN INI)
 
+import { GameHUDLayout } from "@/app/components/GameHUDLayout";
+import { useGameContext } from "@/app/context/GameContext";
+import { HelpContent } from "@/app/types/gameTypes";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import Slider from "@react-native-community/slider";
 import { BlurView } from "expo-blur";
-// Hapus Constants
-import { router, Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  ImageBackground,
+  Alert,
   Modal,
   Platform,
-  // Hapus SafeAreaView
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-// --- PERBAIKAN: Impor SafeAreaView dari context ---
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useGameContext } from "@/app/context/GameContext";
-import {
-  ModalNavigasiProps,
-  ModalPengaturanProps,
-  NavButtonProps,
-} from "@/app/types/gameTypes";
-
-// --- INTERFACE LOKAL (Sudah benar) ---
+// --- INTERFACE MODAL LOKAL ---
 interface ModalMateriProps {
   visible: boolean;
   onClose: () => void;
@@ -42,16 +31,7 @@ interface ModalKuisProps {
   onSelectKuis: (babId: string) => void;
 }
 
-// --- KOMPONEN-KOMPONEN INTERNAL (MODAL, BUTTON, DLL) ---
-
-const NavButton: React.FC<NavButtonProps> = ({ onPress, icon, text }) => (
-  <TouchableOpacity style={styles.navButton} onPress={onPress}>
-    {icon}
-    <Text style={styles.navButtonText}>{text}</Text>
-  </TouchableOpacity>
-);
-
-// (Modal Materi BARU)
+// --- KOMPONEN MODAL MATERI ---
 const ModalMateri: React.FC<ModalMateriProps> = ({
   visible,
   onClose,
@@ -72,7 +52,6 @@ const ModalMateri: React.FC<ModalMateriProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      {/* PERBAIKAN: Tambahkan cek Platform.OS untuk BlurView */}
       <BlurView
         intensity={10}
         tint={Platform.OS === "web" ? "light" : "dark"}
@@ -105,11 +84,7 @@ const ModalMateri: React.FC<ModalMateriProps> = ({
             })}
           </ScrollView>
           <TouchableOpacity
-            style={[
-              styles.modalButton,
-              styles.kembaliButton,
-              { alignSelf: "center", marginTop: 20 },
-            ]}
+            style={[styles.modalButton, styles.kembaliButton]}
             onPress={onClose}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
@@ -121,7 +96,7 @@ const ModalMateri: React.FC<ModalMateriProps> = ({
   );
 };
 
-// (Modal Kuis BARU)
+// --- KOMPONEN MODAL KUIS ---
 const ModalKuis: React.FC<ModalKuisProps> = ({
   visible,
   onClose,
@@ -182,162 +157,7 @@ const ModalKuis: React.FC<ModalKuisProps> = ({
             })}
           </ScrollView>
           <TouchableOpacity
-            style={[
-              styles.modalButton,
-              styles.kembaliButton,
-              { alignSelf: "center", marginTop: 20 },
-            ]}
-            onPress={onClose}
-          >
-            <Ionicons name="arrow-back" size={16} color="white" />
-            <Text style={styles.modalButtonText}>Kembali</Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
-    </Modal>
-  );
-};
-
-// (Modal Pengaturan - Disalin dari kamar.tsx)
-const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
-  visible,
-  onClose,
-  onExit,
-  volume,
-  setVolume,
-  onGunakanEnergi,
-  onTambahEnergi,
-  onDapatKoin,
-  onDapatXP,
-}) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <BlurView
-        intensity={10}
-        tint={Platform.OS === "web" ? "light" : "dark"}
-        style={styles.modalBackdrop}
-      >
-        <View style={styles.modalContainer}>
-          <ScrollView
-            contentContainerStyle={{ alignItems: "center" }}
-            style={{ width: "100%" }}
-          >
-            <Text style={styles.modalTitle}>Pengaturan</Text>
-            <Text style={styles.sliderLabel}>Volume musik</Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={1}
-              value={volume}
-              onValueChange={setVolume} // <-- Ini sudah benar, akan dihubungkan ke dispatch
-              minimumTrackTintColor="#4B0082"
-              maximumTrackTintColor="#D3D3D3"
-              thumbTintColor="#4B0082"
-            />
-            <View style={styles.debugSection}>
-              <Text style={styles.debugTitle}>-- Tombol Testing --</Text>
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={onGunakanEnergi}
-              >
-                <Text>Gunakan Energi (-10)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={onTambahEnergi}
-              >
-                <Text>Tambah Energi (+20)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={onDapatKoin}
-              >
-                <Text>Dapat Koin (+5)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.debugButton} onPress={onDapatXP}>
-                <Text>Dapat XP (+3)</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalButtonRow}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.kembaliButton]}
-                onPress={onClose}
-              >
-                <Ionicons name="arrow-back" size={16} color="white" />
-                <Text style={styles.modalButtonText}>Kembali</Text>
-              </TouchableOpacity>
-              {/* Sembunyikan tombol Keluar di Web */}
-              {Platform.OS !== "web" && (
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.keluarButton]}
-                  onPress={onExit}
-                >
-                  <Ionicons name="home-outline" size={16} color="white" />
-                  <Text style={styles.modalButtonText}>Homescreen</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </ScrollView>
-        </View>
-      </BlurView>
-    </Modal>
-  );
-};
-
-// (Modal Navigasi Eksternal - Disalin dari kamar.tsx)
-const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
-  visible,
-  onClose,
-  onNavigate,
-}) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <BlurView
-        intensity={10}
-        tint={Platform.OS === "web" ? "light" : "dark"}
-        style={styles.modalBackdrop}
-      >
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Pergi ke...</Text>
-          <View style={styles.navigasiGrid}>
-            <TouchableOpacity
-              style={styles.navigasiModalButton}
-              onPress={() => router.push("/toko")}
-            >
-              <MaterialCommunityIcons name="store" size={30} color="#4A2A00" />
-              <Text style={styles.navigasiModalText}>Toko Budaya</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navigasiModalButton}
-              onPress={() => onNavigate("riwayat")} // <-- Tambahkan Riwayat
-            >
-              <Ionicons name="document-text" size={30} color="#4A2A00" />
-              <Text style={styles.navigasiModalText}>Riwayat Belajar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navigasiModalButton}
-              onPress={() => router.push("/pantai")}
-            >
-              <Ionicons name="planet" size={30} color="#4A2A00" />
-              <Text style={styles.navigasiModalText}>Pantai</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.modalButton,
-              styles.kembaliButton,
-              { alignSelf: "center", marginTop: 20 },
-            ]}
+            style={[styles.modalButton, styles.kembaliButton]}
             onPress={onClose}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
@@ -352,26 +172,42 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
 // --- LAYAR KELAS BUDAYA ---
 export default function KelasBudayaScreen() {
   const router = useRouter();
-  const { state, dispatch } = useGameContext(); // <-- Dapatkan state & dispatch
+  const { state } = useGameContext();
 
   const [isMateriVisible, setMateriVisible] = useState(false);
   const [isKuisVisible, setKuisVisible] = useState(false);
-  const [isPengaturanVisible, setPengaturanVisible] = useState(false);
-  const [isEnergiVisible, setEnergiVisible] = useState(false);
-  const [isNavigasiVisible, setNavigasiVisible] = useState(false);
-  // const [volume, setVolume] = useState(0.5); // <-- HAPUS STATE LOKAL INI
 
-  const handleExitToHome = () => {
-    setPengaturanVisible(false);
-    router.replace("/");
-  };
+  // --- KONTEN BANTUAN (Dipindahkan ke sini agar aman) ---
+  const kelasHelpContent: HelpContent = {
+    title: "Kelas Budaya 🏫",
+    body: (
+      <View>
+        <Text style={styles.helpText}>
+          Selamat datang di Kelas Budaya! Tempat Si Cula menimba ilmu Sosiologi.
+        </Text>
 
-  const handleNavigasiEksternal = (screen: string) => {
-    setNavigasiVisible(false);
-    console.log(`Navigasi ke: ${screen}`);
-    if (screen === "riwayat") {
-      router.push("/riwayat");
-    }
+        <Text style={[styles.helpText, { marginTop: 10 }]}>
+          <Text style={styles.bold}>Fitur Belajar:</Text>
+        </Text>
+        <Text style={styles.helpText}>
+          • <Text style={styles.bold}>Materi Belajar:</Text> Baca rangkuman
+          materi per bab (Kelompok Sosial, Permasalahan Sosial, dll).{"\n"}•{" "}
+          <Text style={styles.bold}>Mulai Kuis:</Text> Kerjakan soal latihan
+          untuk mendapatkan XP dan naik level.
+        </Text>
+
+        <Text style={[styles.helpText, { marginTop: 10 }]}>
+          <Text style={styles.bold}>Info Penting:</Text>
+        </Text>
+        <Text style={styles.helpText}>
+          • Mengerjakan kuis membutuhkan <Text style={styles.bold}>Energi</Text>
+          .{"\n"}• Bab baru akan terbuka otomatis saat Si Cula berevolusi (Anak,
+          Remaja, Dewasa).{"\n"}• Cek tombol{" "}
+          <Text style={styles.bold}>Riwayat</Text> untuk melihat nilai kuis kamu
+          sebelumnya.
+        </Text>
+      </View>
+    ),
   };
 
   const handleSelectMateri = (babId: string) => {
@@ -385,16 +221,18 @@ export default function KelasBudayaScreen() {
     const KUIS_COOLDOWN_MS = 30 * 1000;
 
     if (state.energi < KUIS_ENERGY_COST) {
-      alert("Si Cula lelah! Isi energi dulu di Dapur.");
+      Alert.alert("Lelah", "Si Cula lelah! Isi energi dulu di Dapur.");
       return;
     }
 
     const timeSinceLastQuiz = Date.now() - state.lastQuizTimestamp;
     if (timeSinceLastQuiz < KUIS_COOLDOWN_MS) {
-      alert(
-        `Harus menunggu ${Math.ceil(
-          (KUIS_COOLDOWN_MS - timeSinceLastQuiz) / 1000
-        )} detik lagi!`
+      const waitSeconds = Math.ceil(
+        (KUIS_COOLDOWN_MS - timeSinceLastQuiz) / 1000
+      );
+      Alert.alert(
+        "Istirahat Dulu",
+        `Harus menunggu ${waitSeconds} detik lagi sebelum kuis berikutnya!`
       );
       return;
     }
@@ -402,352 +240,111 @@ export default function KelasBudayaScreen() {
     router.push({ pathname: "/kuis/[bab]", params: { bab: babId } });
   };
 
-  // Handler Debug
-  const handleGunakanEnergi = () =>
-    dispatch({ type: "GUNAKAN_ENERGI", payload: 10 });
-  const handleTambahEnergi = () =>
-    dispatch({ type: "TAMBAH_ENERGI", payload: 20 });
-  const handleDapatKoin = () => dispatch({ type: "TAMBAH_KOIN", payload: 5 });
-  const handleDapatXP = () => dispatch({ type: "TAMBAH_XP", payload: 3 });
-
-  const energiPercentage = (state.energi / state.maxEnergi) * 100;
-
-  if (state.isLoading) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#4A2A00" />
-      </View>
-    );
-  }
-
   return (
-    <ImageBackground
-      source={require("@/assets/images/kelas_bg.png")}
-      style={styles.container}
+    <GameHUDLayout
+      backgroundImage={require("@/assets/images/kelas_bg.png")}
+      onPressNavLeft={() => router.replace("/kamar")}
+      onPressNavRight={() => {}}
+      helpContent={kelasHelpContent} // <-- Fitur Help
+      middleNavButton={{
+        onPress: () =>
+          Alert.alert("Info", "Kamu sedang berada di dalam Kelas."),
+        icon: <Ionicons name="school" size={24} color="white" />,
+        text: "Belajar",
+      }}
+      pageModal={
+        <>
+          <ModalMateri
+            visible={isMateriVisible}
+            onClose={() => setMateriVisible(false)}
+            onSelectMateri={handleSelectMateri}
+          />
+          <ModalKuis
+            visible={isKuisVisible}
+            onClose={() => setKuisVisible(false)}
+            onSelectKuis={handleSelectKuis}
+          />
+        </>
+      }
     >
-      {/* --- PERBAIKAN: Ganti ke SafeAreaView yang benar --- */}
-      <SafeAreaView style={styles.safeArea} edges={["top"]}>
-        <Stack.Screen options={{ headerShown: false }} />
+      {/* KONTEN UTAMA */}
+      <View style={styles.kontenArea}>
+        {/* Tombol Materi */}
+        <TouchableOpacity
+          style={styles.menuUtamaButton}
+          onPress={() => setMateriVisible(true)}
+        >
+          <Ionicons name="book" size={40} color="#4A2A00" />
+          <Text style={styles.menuUtamaText}>Materi Belajar</Text>
+        </TouchableOpacity>
 
-        {/* ===== 1. HUD ATAS ===== */}
-        <View style={styles.hudAtas}>
-          <View style={styles.hudInfoKiri}>
-            <Text style={styles.textNama}>Si Cula</Text>
-            <Text style={styles.textXP}>
-              XP {state.xp}/{state.xpToNextLevel} - {state.phase}
-            </Text>
-          </View>
-          <View style={styles.hudInfoTengah}>
-            <TouchableOpacity
-              style={styles.tombolEnergi}
-              onPress={() => setEnergiVisible(!isEnergiVisible)}
-            >
-              <View
-                style={[styles.energiFill, { height: `${energiPercentage}%` }]}
-              />
-              <Ionicons
-                name="flash"
-                size={24}
-                color="white"
-                style={styles.energiIcon}
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.hudInfoKanan}>
-            <MaterialCommunityIcons name="gold" size={24} color="#FFD700" />
-            <Text style={styles.textKoin}>{state.koin}</Text>
-          </View>
-        </View>
+        {/* Tombol Kuis */}
+        <TouchableOpacity
+          style={styles.menuUtamaButton}
+          onPress={() => setKuisVisible(true)}
+        >
+          <Ionicons name="play-circle" size={40} color="#4A2A00" />
+          <Text style={styles.menuUtamaText}>Mulai Kuis</Text>
+        </TouchableOpacity>
 
-        {isEnergiVisible && (
-          <View style={styles.energiModal}>
-            <Text style={styles.energiText}>
-              Energi: {state.energi}/{state.maxEnergi}
-            </Text>
-          </View>
-        )}
-
-        {/* ===== 2. KONTEN KELAS BUDAYA ===== */}
-        <View style={styles.kontenArea}>
-          <TouchableOpacity
-            style={styles.menuUtamaButton}
-            onPress={() => setMateriVisible(true)}
-          >
-            <Ionicons name="book" size={40} color="#4A2A00" />
-            <Text style={styles.menuUtamaText}>Materi Belajar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuUtamaButton}
-            onPress={() => setKuisVisible(true)}
-          >
-            <Ionicons name="school" size={40} color="#4A2A00" />
-            <Text style={styles.menuUtamaText}>Mulai Kuis</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ===== 3. NAVIGASI INTERNAL (Hanya 1 tombol kembali) ===== */}
-        <View style={styles.intraNavContainer}>
-          <TouchableOpacity
-            style={styles.intraNavButton}
-            onPress={() => router.replace("/kamar")} // Kembali ke Kamar
-          >
-            <Ionicons name="arrow-back-circle" size={50} color="#8A2BE2" />
-          </TouchableOpacity>
-        </View>
-
-        {/* ===== 4. HUD BAWAH (Tombol Aksi disembunyikan/custom) ===== */}
-        <View style={styles.hudBawah}>
-          <NavButton
-            onPress={() => setNavigasiVisible(true)}
-            icon={<Ionicons name="map" size={24} color="white" />}
-            text="Navigasi"
-          />
-          <View style={styles.navButtonDisabled}>
-            <Ionicons name="book" size={24} color="#AAA" />
-            <Text style={styles.navButtonTextDisabled}>Belajar</Text>
-          </View>
-          <NavButton
-            onPress={() => setPengaturanVisible(true)}
-            icon={<Ionicons name="cog" size={24} color="white" />}
-            text="Pengaturan"
-          />
-        </View>
-
-        {/* ===== 5. MODALS ===== */}
-        <ModalMateri
-          visible={isMateriVisible}
-          onClose={() => setMateriVisible(false)}
-          onSelectMateri={handleSelectMateri}
-        />
-        <ModalKuis
-          visible={isKuisVisible}
-          onClose={() => setKuisVisible(false)}
-          onSelectKuis={handleSelectKuis}
-        />
-        {/* --- PERBAIKAN: Hubungkan Slider ke Context --- */}
-        <ModalPengaturan
-          visible={isPengaturanVisible}
-          onClose={() => setPengaturanVisible(false)}
-          onExit={handleExitToHome}
-          volume={state.volume} // <-- Gunakan state.volume
-          setVolume={(newVolume) =>
-            dispatch({
-              type: "SET_VOLUME",
-              payload:
-                typeof newVolume === "function"
-                  ? (newVolume as (prev: number) => number)(state.volume)
-                  : newVolume,
-            })
-          } // <-- Gunakan dispatch
-          onGunakanEnergi={handleGunakanEnergi}
-          onTambahEnergi={handleTambahEnergi}
-          onDapatKoin={handleDapatKoin}
-          onDapatXP={handleDapatXP}
-        />
-        <ModalNavigasiEksternal
-          visible={isNavigasiVisible}
-          onClose={() => setNavigasiVisible(false)}
-          onNavigate={handleNavigasiEksternal}
-        />
-      </SafeAreaView>
-    </ImageBackground>
+        {/* Tombol Riwayat */}
+        <TouchableOpacity
+          style={[styles.menuUtamaButton, styles.historyButton]}
+          onPress={() => router.push("/riwayat")}
+        >
+          <MaterialCommunityIcons name="history" size={40} color="#4A2A00" />
+          <Text style={styles.menuUtamaText}>Riwayat Nilai</Text>
+        </TouchableOpacity>
+      </View>
+    </GameHUDLayout>
   );
 }
 
 // --- STYLESHEET ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    // --- PERBAIKAN: Hapus paddingTop ---
-    // paddingTop: Platform.OS === "android" ? Constants.statusBarHeight : 0,
-    // Perbaikan untuk Web: Pastikan gambar cover penuh
-    width: "100%",
-    height: "100%",
+  // Styles Help
+  helpText: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 24,
+    marginBottom: 5,
   },
-  safeArea: {
-    flex: 1,
+  bold: {
+    fontWeight: "bold",
+    color: "#4A2A00",
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#D2B48C",
-  },
-  // --- HUD Atas ---
-  hudAtas: {
-    position: "absolute",
-    // --- PERBAIKAN: Logika 'top' untuk Web ---
-    top: Platform.OS === "web" ? 10 : 50, // Disederhanakan, 50 untuk native
-    left: 20,
-    right: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    zIndex: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    elevation: 2,
-    // Perbaikan Web: Batasi lebar di layar besar
-    maxWidth: 800,
-    alignSelf: "center",
-  },
-  hudInfoKiri: { flex: 1, alignItems: "flex-start" },
-  hudInfoTengah: { flex: 1, alignItems: "center" },
-  hudInfoKanan: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  textNama: { fontSize: 20, fontWeight: "bold", color: "black" },
-  textXP: { fontSize: 14, color: "black" },
-  textKoin: { fontSize: 18, fontWeight: "bold", color: "black", marginLeft: 5 },
-  tombolEnergi: {
-    backgroundColor: "#555",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "white",
-    elevation: 3,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
-  },
-  energiFill: {
-    backgroundColor: "#FFC107",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  energiIcon: {
-    zIndex: 1,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
-  energiModal: {
-    position: "absolute",
-    // --- PERBAIKAN: Logika 'top' untuk Web ---
-    top: Platform.OS === "web" ? 70 : 110, // Disederhanakan, 110 untuk native
-    alignSelf: "center",
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 10,
-    elevation: 5,
-    zIndex: 20,
-  },
-  energiText: { fontSize: 14, color: "#333" },
-
-  // --- Konten Area ---
+  // Layout Utama
   kontenArea: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingBottom: 80, // Beri ruang untuk HUD bawah
   },
   menuUtamaButton: {
-    backgroundColor: "rgba(255, 179, 71, 0.9)", // Oranye #FFB347
+    backgroundColor: "rgba(255, 179, 71, 0.9)", // Oranye
     borderColor: "#4A2A00",
-    borderWidth: 5,
+    borderWidth: 4,
     borderRadius: 20,
-    padding: 20,
-    width: "70%",
-    maxWidth: 300, // <-- Tambahkan maxWidth untuk web
+    padding: 15,
+    width: "80%",
+    maxWidth: 350,
     alignItems: "center",
-    marginVertical: 10,
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
+    marginVertical: 8,
+    flexDirection: "row", // Ikon di samping teks
+    justifyContent: "center",
+    elevation: 5,
+  },
+  historyButton: {
+    backgroundColor: "#87CEEB", // Warna beda untuk riwayat (Biru Langit)
+    borderColor: "#4682B4",
   },
   menuUtamaText: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#4A2A00",
-    marginTop: 10,
+    marginLeft: 15,
   },
-
-  // --- Navigasi Internal ---
-  intraNavContainer: {
-    position: "absolute",
-    bottom: 100,
-    left: 15,
-    right: 15,
-    flexDirection: "row",
-    justifyContent: "flex-start", // Hanya tombol kembali
-    zIndex: 5,
-    // Perbaikan Web: Batasi lebar di layar besar
-    maxWidth: 800,
-    alignSelf: "center",
-  },
-  intraNavButton: {
-    opacity: 0.7,
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
-  },
-
-  // --- HUD Bawah ---
-  hudBawah: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 90,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "flex-start",
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 10,
-    // Perbaikan Web: Batasi lebar di layar besar
-    width: "100%",
-    maxWidth: 800,
-    alignSelf: "center",
-  },
-  navButton: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#8A2BE2",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    width: 100,
-    height: 70,
-    elevation: 3,
-    borderBottomWidth: 4,
-    borderColor: "#4B0082",
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
-  },
-  navButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 12,
-    marginTop: 4,
-  },
-  navButtonDisabled: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#AAA",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    width: 100,
-    height: 70,
-    borderBottomWidth: 4,
-    borderColor: "#777",
-  },
-  navButtonTextDisabled: {
-    color: "#DDD",
-    fontWeight: "bold",
-    fontSize: 12,
-    marginTop: 4,
-  },
-
-  // --- Style Modal ---
+  // Styles Modal
   modalBackdrop: {
     flex: 1,
     justifyContent: "center",
@@ -762,60 +359,13 @@ const styles = StyleSheet.create({
     borderWidth: 5,
     borderColor: "#4A2A00",
     padding: 20,
+    alignItems: "center",
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#4A2A00",
     marginBottom: 20,
-    alignSelf: "center",
-  },
-  sliderLabel: {
-    fontSize: 16,
-    color: "#4A2A00",
-    marginBottom: 10,
-    alignSelf: "flex-start",
-  },
-  slider: {
-    width: "100%",
-    height: 40,
-    marginBottom: 20,
-  },
-  modalButtonRow: {
-    flexDirection: "row",
-    justifyContent: "space-around", // <-- Ganti ke space-around
-    width: "100%",
-    marginTop: 20,
-  },
-  modalButton: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    borderBottomWidth: 4,
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
-  },
-  modalButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginLeft: 5,
-  },
-  kembaliButton: {
-    backgroundColor: "#8A2BE2",
-    borderColor: "#4B0082",
-  },
-  keluarButton: {
-    backgroundColor: "#DC143C",
-    borderColor: "#8B0000",
-  },
-
-  // --- Style Modal Navigasi / Kuis / Materi ---
-  navigasiGrid: {
-    width: "100%",
-    alignItems: "center",
   },
   navigasiModalButton: {
     backgroundColor: "rgba(255, 255, 255, 0.7)",
@@ -827,7 +377,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     marginBottom: 10,
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
   },
   navigasiModalText: {
     color: "#4A2A00",
@@ -835,37 +384,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 15,
   },
+  modalButton: {
+    flexDirection: "row",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 4,
+    marginTop: 10,
+  },
+  modalButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginLeft: 5,
+  },
+  kembaliButton: {
+    backgroundColor: "#8A2BE2",
+    borderColor: "#4B0082",
+  },
   disabledButton: {
-    backgroundColor: "#AAA",
-    opacity: 0.6,
+    backgroundColor: "#CCC",
+    borderColor: "#999",
+    opacity: 0.7,
   },
   completedButton: {
-    backgroundColor: "#a0e8a0", // Hijau muda
-  },
-
-  // --- Style Debug ---
-  debugSection: {
-    width: "100%",
-    borderTopWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: "#4A2A00",
-    paddingVertical: 15,
-    marginVertical: 15,
-    alignItems: "center",
-  },
-  debugTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#4A2A00",
-    marginBottom: 10,
-  },
-  debugButton: {
-    backgroundColor: "#FFF",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-    borderColor: "#CCC",
-    borderWidth: 1,
-    cursor: "pointer", // <-- Tambahkan kursor untuk web
+    backgroundColor: "#D4EDDA",
+    borderColor: "#28A745",
   },
 });

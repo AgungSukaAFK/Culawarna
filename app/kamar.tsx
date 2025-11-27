@@ -9,7 +9,6 @@ import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -22,36 +21,44 @@ import {
 import { CulaCharacter } from "@/app/components/CulaCharacter";
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
-import { ModalLemariProps, Outfit } from "@/app/types/gameTypes";
+import { HelpContent, ModalLemariProps, Outfit } from "@/app/types/gameTypes";
+
+// --- KONTEN BANTUAN (Updated) ---
+const kamarHelpContent: HelpContent = {
+  title: "Panduan Kamar 🛏️",
+  body: `Di sini tempat kamu mendandani Si Cula!
+
+• Tekan tombol "Lemari" untuk melihat koleksi pakaian.
+• Pilih baju adat yang ingin dipakai.
+• Tekan "Lepas" untuk kembali ke tampilan dasar.
+
+Cobalah berbagai baju adat dari seluruh Nusantara!`,
+};
 
 // --- KOMPONEN MODAL SPESIFIK KAMAR ---
 const ModalLemari: React.FC<ModalLemariProps> = ({ visible, onClose }) => {
   const { state, dispatch } = useGameContext();
 
   const handleGanti = (itemType: keyof Outfit, itemId: string | null) => {
-    // ATURAN 1: Jika memilih Baju Baduy, lepas Topi otomatis
-    if (itemType === "bajuId" && itemId === "baju-baduy") {
-      dispatch({
-        type: "GANTI_OUTFIT",
-        payload: { itemType: "topiId", itemId: null },
-      });
-    }
-
-    // ATURAN 2: Jika sedang pakai Baduy, tidak bisa pasang Topi
-    if (itemType === "topiId" && itemId !== null) {
-      if (state.currentOutfit.bajuId === "baju-baduy") {
-        Alert.alert(
-          "Tidak Bisa",
-          "Pakaian Baduy tidak dapat dikombinasikan dengan topi ini. Lepas baju Baduy terlebih dahulu."
-        );
-        return;
-      }
-    }
-
+    // Logika sederhana: Langsung ganti baju
     dispatch({
       type: "GANTI_OUTFIT",
       payload: { itemType, itemId },
     });
+  };
+
+  // Helper untuk menampilkan nama yang lebih cantik
+  const formatNamaBaju = (id: string) => {
+    switch (id) {
+      case "baju-baduy":
+        return "Baduy";
+      case "baju-batik":
+        return "Batik";
+      case "baju-minang":
+        return "Minang";
+      default:
+        return id;
+    }
   };
 
   return (
@@ -65,56 +72,10 @@ const ModalLemari: React.FC<ModalLemariProps> = ({ visible, onClose }) => {
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Lemari Baju</Text>
           <ScrollView style={{ width: "100%" }}>
-            {/* --- Kategori Topi --- */}
-            <Text style={styles.categoryTitle}>Topi</Text>
+            {/* --- Hanya Kategori Baju --- */}
+            <Text style={styles.categoryTitle}>Pakaian Adat</Text>
             <View style={styles.lemariGrid}>
-              {/* Tombol Lepas Topi (Berfungsi sebagai kembali ke dasar) */}
-              <TouchableOpacity
-                style={[
-                  styles.itemBaju,
-                  (state.currentOutfit.topiId === null ||
-                    state.currentOutfit.topiId === "topi-dasar") &&
-                    styles.itemSelected,
-                ]}
-                onPress={() => handleGanti("topiId", null)}
-              >
-                <Ionicons name="close-circle" size={40} color="#4A2A00" />
-                <Text style={styles.itemBajuText}>Lepas</Text>
-              </TouchableOpacity>
-
-              {/* List Topi (Filter 'topi-dasar' agar tidak muncul) */}
-              {state.ownedTopi
-                .filter((id) => id !== "topi-dasar")
-                .map((itemId) => (
-                  <TouchableOpacity
-                    key={itemId}
-                    style={[
-                      styles.itemBaju,
-                      state.currentOutfit.topiId === itemId &&
-                        styles.itemSelected,
-                      state.currentOutfit.bajuId === "baju-baduy" &&
-                        styles.itemDisabled,
-                    ]}
-                    onPress={() => handleGanti("topiId", itemId)}
-                  >
-                    <FontAwesome5
-                      name="hat-wizard"
-                      size={40}
-                      color={
-                        state.currentOutfit.bajuId === "baju-baduy"
-                          ? "#999"
-                          : "#4A2A00"
-                      }
-                    />
-                    <Text style={styles.itemBajuText}>{itemId}</Text>
-                  </TouchableOpacity>
-                ))}
-            </View>
-
-            {/* --- Kategori Baju --- */}
-            <Text style={styles.categoryTitle}>Baju</Text>
-            <View style={styles.lemariGrid}>
-              {/* Tombol Lepas Baju (Berfungsi sebagai kembali ke dasar) */}
+              {/* Tombol Lepas Baju */}
               <TouchableOpacity
                 style={[
                   styles.itemBaju,
@@ -128,7 +89,7 @@ const ModalLemari: React.FC<ModalLemariProps> = ({ visible, onClose }) => {
                 <Text style={styles.itemBajuText}>Lepas</Text>
               </TouchableOpacity>
 
-              {/* List Baju (Filter 'baju-dasar' agar tidak muncul) */}
+              {/* List Baju yang Dimiliki */}
               {state.ownedBaju
                 .filter((id) => id !== "baju-dasar")
                 .map((itemId) => (
@@ -142,7 +103,9 @@ const ModalLemari: React.FC<ModalLemariProps> = ({ visible, onClose }) => {
                     onPress={() => handleGanti("bajuId", itemId)}
                   >
                     <FontAwesome5 name="tshirt" size={40} color="#4A2A00" />
-                    <Text style={styles.itemBajuText}>{itemId}</Text>
+                    <Text style={styles.itemBajuText}>
+                      {formatNamaBaju(itemId)}
+                    </Text>
                   </TouchableOpacity>
                 ))}
             </View>
@@ -176,6 +139,7 @@ export default function KamarScreen() {
       backgroundImage={require("@/assets/images/kamar_bg.png")}
       onPressNavLeft={() => router.replace("/dapur")}
       onPressNavRight={() => router.replace("/ruangTamu")}
+      helpContent={kamarHelpContent}
       middleNavButton={{
         onPress: () => setLemariVisible(true),
         icon: (
@@ -192,21 +156,11 @@ export default function KamarScreen() {
     >
       {/* Konten Halaman Ini */}
       <View style={styles.kontenArea}>
+        {/* Debug Info Sederhana */}
         <View style={styles.debugInfo}>
-          {/* Menampilkan label '-' jika null atau 'dasar' */}
           <Text style={styles.textPlaceholder}>
-            Baju:{" "}
-            {state.currentOutfit.bajuId &&
-            state.currentOutfit.bajuId !== "baju-dasar"
-              ? state.currentOutfit.bajuId
-              : "-"}
-          </Text>
-          <Text style={styles.textPlaceholder}>
-            Topi:{" "}
-            {state.currentOutfit.topiId &&
-            state.currentOutfit.topiId !== "topi-dasar"
-              ? state.currentOutfit.topiId
-              : "-"}
+            Outfit:{" "}
+            {state.currentOutfit.bajuId ? state.currentOutfit.bajuId : "Dasar"}
           </Text>
         </View>
 
@@ -309,18 +263,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#4A2A00",
-    width: "30%",
+    width: "30%", // 3 Kolom
     margin: "1.5%",
   },
   itemSelected: {
     backgroundColor: "#d4edda",
     borderColor: "#28a745",
     borderWidth: 3,
-  },
-  itemDisabled: {
-    opacity: 0.5,
-    backgroundColor: "#ddd",
-    borderColor: "#999",
   },
   itemBajuText: {
     marginTop: 5,

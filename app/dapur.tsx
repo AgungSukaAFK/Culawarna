@@ -3,7 +3,7 @@
 import { CulaCharacter } from "@/app/components/CulaCharacter";
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
-import { FoodItem } from "@/app/types/gameTypes";
+import { FoodItem, HelpContent } from "@/app/types/gameTypes";
 import { FoodImages } from "@/app/utils/foodAssets";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -37,6 +37,8 @@ const UNLOCKED_FOODS: { [key: string]: string[] } = {
   ],
 };
 
+// (Hapus 'dapurHelpContent' dari sini agar tidak error)
+
 interface ModalDapurProps {
   visible: boolean;
   onClose: () => void;
@@ -46,9 +48,8 @@ const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
   const { state, dispatch } = useGameContext();
   const [now, setNow] = useState(Date.now());
 
-  // Timer update per detik
   useEffect(() => {
-    let timer: any; // <-- PERBAIKAN 1: Gunakan 'any' agar aman di RN
+    let timer: any;
     if (visible) {
       setNow(Date.now());
       timer = setInterval(() => setNow(Date.now()), 1000);
@@ -56,7 +57,6 @@ const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
     return () => clearInterval(timer);
   }, [visible]);
 
-  // Hitung slot masak (Max 2)
   const cookingCount = Object.values(state.foodInventory).filter(
     (f: FoodItem) => f.isCooking
   ).length;
@@ -78,7 +78,6 @@ const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
     dispatch({ type: "KONSUMSI_MAKANAN", payload: { foodId: item.id } });
   };
 
-  // Ambil list makanan sesuai fase saat ini
   const visibleFoodKeys = UNLOCKED_FOODS[state.phase] || [];
 
   return (
@@ -105,14 +104,12 @@ const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
               const item = state.foodInventory[key];
               if (!item) return null;
 
-              // Hitung sisa waktu masak
               const finishTime = item.cookingStartTime + item.cookDuration;
               const timeLeft = Math.max(0, finishTime - now);
               const isReady = item.isCooking && timeLeft <= 0;
 
               return (
                 <View key={item.id} style={styles.foodItem}>
-                  {/* PERBAIKAN 2: Casting ke 'any' agar index string valid */}
                   <Image
                     source={(FoodImages as any)[item.id]}
                     style={styles.foodImage}
@@ -130,7 +127,6 @@ const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
                   </View>
 
                   <View style={styles.foodActions}>
-                    {/* Tombol Makan */}
                     <TouchableOpacity
                       style={[
                         styles.actionButton,
@@ -143,7 +139,6 @@ const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
                       <Text style={styles.btnText}>Makan</Text>
                     </TouchableOpacity>
 
-                    {/* Tombol Masak/Sajikan */}
                     {item.isCooking ? (
                       isReady ? (
                         <TouchableOpacity
@@ -204,11 +199,48 @@ export default function DapurScreen() {
   const router = useRouter();
   const [isModalVisible, setModalVisible] = useState(false);
 
+  // --- PINDAHKAN KONTEN BANTUAN KE SINI ---
+  // Dengan memindahkannya ke dalam komponen, variabel 'styles' sudah terdefinisi
+  // saat kode ini dijalankan.
+  const dapurHelpContent: HelpContent = {
+    title: "Dapur & Memasak 🍳",
+    body: (
+      <View>
+        <Text style={styles.helpText}>
+          Selamat datang di Dapur! Di sini kamu bisa memasak makanan khas Banten
+          untuk mengisi energi Si Cula.
+        </Text>
+
+        <Text style={[styles.helpText, { marginTop: 10 }]}>
+          <Text style={styles.bold}>Cara Memasak:</Text>
+        </Text>
+        <Text style={styles.helpText}>
+          1. Pilih menu makanan yang tersedia.{"\n"}
+          2. Tekan tombol <Text style={styles.bold}>Masak</Text> untuk memulai
+          proses.{"\n"}
+          3. Tunggu waktu memasak selesai (lihat timer).{"\n"}
+          4. Setelah matang, tekan <Text style={styles.bold}>Sajikan</Text>{" "}
+          untuk memasukkannya ke stok.
+        </Text>
+
+        <Text style={[styles.helpText, { marginTop: 10 }]}>
+          <Text style={styles.bold}>Aturan Dapur:</Text>
+        </Text>
+        <Text style={styles.helpText}>
+          • Kamu hanya punya <Text style={styles.bold}>2 Slot Kompor</Text>.
+          Jadi hanya bisa memasak 2 makanan sekaligus.{"\n"}• Menu makanan baru
+          akan terbuka seiring pertumbuhan Si Cula (Baby → Dewasa).
+        </Text>
+      </View>
+    ),
+  };
+
   return (
     <GameHUDLayout
       backgroundImage={require("@/assets/images/dapur_bg.png")}
       onPressNavLeft={() => router.replace("/ruangTamu")}
       onPressNavRight={() => router.replace("/kamar")}
+      helpContent={dapurHelpContent} // Pass konten ke layout
       middleNavButton={{
         onPress: () => setModalVisible(true),
         icon: <Ionicons name="restaurant" size={24} color="white" />,
@@ -229,6 +261,18 @@ export default function DapurScreen() {
 }
 
 const styles = StyleSheet.create({
+  // --- Styles Help ---
+  helpText: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 24,
+    marginBottom: 5,
+  },
+  bold: {
+    fontWeight: "bold",
+    color: "#4A2A00",
+  },
+  // --- Styles Halaman Dapur ---
   kontenArea: {
     flex: 1,
     justifyContent: "flex-end",

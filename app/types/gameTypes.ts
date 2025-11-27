@@ -2,6 +2,7 @@
 // (PERBARUI FILE ANDA)
 
 import { ReactNode } from "react";
+import { ImageSourcePropType } from "react-native";
 
 // Tipe Status Cula
 export type CulaPhase = "Baby" | "Anak" | "Remaja" | "Dewasa";
@@ -57,11 +58,29 @@ export interface MateriProgress {
   };
 }
 
+export type AppearanceMode = "Default" | CulaPhase;
+
+export interface GameHUDLayoutProps {
+  children: ReactNode;
+  backgroundImage: ImageSourcePropType;
+  middleNavButton: NavButtonProps;
+  pageModal: ReactNode;
+  onPressNavLeft: () => void;
+  onPressNavRight: () => void;
+  helpContent?: HelpContent;
+}
+
+export interface HelpContent {
+  title: string;
+  body: string | ReactNode; // <-- Ubah jadi ini agar fleksibel
+}
+
 // Tipe State Utama
 export interface GameState {
+  phase: CulaPhase;
   xp: number;
   xpToNextLevel: number;
-  phase: CulaPhase;
+  selectedAppearance: AppearanceMode;
   koin: number;
   energi: number;
   maxEnergi: number;
@@ -91,6 +110,7 @@ export type GameAction =
   | { type: "TAMBAH_KOIN"; payload: number }
   | { type: "KURANGI_KOIN"; payload: number }
   | { type: "SET_VOLUME"; payload: number }
+  | { type: "SET_APPEARANCE"; payload: AppearanceMode }
   | {
       type: "GANTI_OUTFIT";
       payload: { itemType: keyof Outfit; itemId: string | null }; // Izinkan null
@@ -126,11 +146,17 @@ export interface ModalPengaturanProps {
   onClose: () => void;
   onExit: () => void;
   volume: number;
-  setVolume: React.Dispatch<React.SetStateAction<number>>;
-  onGunakanEnergi: () => void;
-  onTambahEnergi: () => void;
-  onDapatKoin: () => void;
-  onDapatXP: () => void;
+  setVolume: (vol: number) => void;
+
+  // Props Baru untuk Tampilan
+  selectedAppearance: AppearanceMode;
+  setAppearance: (mode: AppearanceMode) => void;
+
+  // Debug props (biarkan jika masih ada)
+  onGunakanEnergi?: () => void;
+  onTambahEnergi?: () => void;
+  onDapatKoin?: () => void;
+  onDapatXP?: () => void;
 }
 
 export interface ModalNavigasiProps {

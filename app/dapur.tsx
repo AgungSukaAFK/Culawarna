@@ -1,5 +1,6 @@
 // Di dalam file: app/dapur.tsx
 
+import { useSFX } from "@/app/_layout"; // <-- 1. Import useSFX
 import { CulaCharacter } from "@/app/components/CulaCharacter";
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
@@ -37,8 +38,6 @@ const UNLOCKED_FOODS: { [key: string]: string[] } = {
   ],
 };
 
-// (Hapus 'dapurHelpContent' dari sini agar tidak error)
-
 interface ModalDapurProps {
   visible: boolean;
   onClose: () => void;
@@ -46,6 +45,7 @@ interface ModalDapurProps {
 
 const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
   const { state, dispatch } = useGameContext();
+  const { playSfx, playBtnSound } = useSFX(); // <-- 2. Panggil hook useSFX
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -64,17 +64,21 @@ const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
 
   const handleMasak = (item: FoodItem) => {
     if (cookingCount >= MAX_SLOT) {
+      playSfx("quiz_wrong"); // SFX Error saat penuh
       Alert.alert("Kompor Penuh!", "Tunggu masakan lain matang dulu ya.");
       return;
     }
+    playSfx("tap"); // SFX Tap saat mulai masak
     dispatch({ type: "MULAI_MASAK", payload: { foodId: item.id } });
   };
 
   const handleAmbil = (item: FoodItem) => {
+    playSfx("quiz_correct"); // SFX Sukses saat menyajikan
     dispatch({ type: "AMBIL_MASAKAN", payload: { foodId: item.id } });
   };
 
   const handleMakan = (item: FoodItem) => {
+    playSfx("tap2"); // SFX Makan (Tap 2)
     dispatch({ type: "KONSUMSI_MAKANAN", payload: { foodId: item.id } });
   };
 
@@ -184,7 +188,10 @@ const ModalDapur: React.FC<ModalDapurProps> = ({ visible, onClose }) => {
 
           <TouchableOpacity
             style={[styles.modalButton, styles.kembaliButton]}
-            onPress={onClose}
+            onPress={() => {
+              playBtnSound(); // SFX Tutup Modal
+              onClose();
+            }}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
             <Text style={styles.modalButtonText}>Kembali</Text>
@@ -199,37 +206,31 @@ export default function DapurScreen() {
   const router = useRouter();
   const [isModalVisible, setModalVisible] = useState(false);
 
-  // --- PINDAHKAN KONTEN BANTUAN KE SINI ---
-  // Dengan memindahkannya ke dalam komponen, variabel 'styles' sudah terdefinisi
-  // saat kode ini dijalankan.
+  // --- KONTEN BANTUAN ---
   const dapurHelpContent: HelpContent = {
     title: "Dapur & Memasak 🍳",
     body: (
       <View>
         <Text style={styles.helpText}>
-          Selamat datang di Dapur! Di sini kamu bisa memasak makanan khas Banten
-          untuk mengisi energi Si Cula.
+          Selamat datang di Dapur! Di sini kamu bisa memasak makanan khas Banten untuk mengisi energi Si Cula.
         </Text>
-
+        
         <Text style={[styles.helpText, { marginTop: 10 }]}>
           <Text style={styles.bold}>Cara Memasak:</Text>
         </Text>
         <Text style={styles.helpText}>
           1. Pilih menu makanan yang tersedia.{"\n"}
-          2. Tekan tombol <Text style={styles.bold}>Masak</Text> untuk memulai
-          proses.{"\n"}
+          2. Tekan tombol <Text style={styles.bold}>Masak</Text> untuk memulai proses.{"\n"}
           3. Tunggu waktu memasak selesai (lihat timer).{"\n"}
-          4. Setelah matang, tekan <Text style={styles.bold}>Sajikan</Text>{" "}
-          untuk memasukkannya ke stok.
+          4. Setelah matang, tekan <Text style={styles.bold}>Sajikan</Text> untuk memasukkannya ke stok.
         </Text>
-
+  
         <Text style={[styles.helpText, { marginTop: 10 }]}>
           <Text style={styles.bold}>Aturan Dapur:</Text>
         </Text>
         <Text style={styles.helpText}>
-          • Kamu hanya punya <Text style={styles.bold}>2 Slot Kompor</Text>.
-          Jadi hanya bisa memasak 2 makanan sekaligus.{"\n"}• Menu makanan baru
-          akan terbuka seiring pertumbuhan Si Cula (Baby → Dewasa).
+          • Kamu hanya punya <Text style={styles.bold}>2 Slot Kompor</Text>. Jadi hanya bisa memasak 2 makanan sekaligus.{"\n"}
+          • Menu makanan baru akan terbuka seiring pertumbuhan Si Cula (Baby → Dewasa).
         </Text>
       </View>
     ),
@@ -240,9 +241,9 @@ export default function DapurScreen() {
       backgroundImage={require("@/assets/images/dapur_bg.png")}
       onPressNavLeft={() => router.replace("/ruangTamu")}
       onPressNavRight={() => router.replace("/kamar")}
-      helpContent={dapurHelpContent} // Pass konten ke layout
+      helpContent={dapurHelpContent} 
       middleNavButton={{
-        onPress: () => setModalVisible(true),
+        onPress: () => setModalVisible(true), // SFX handled by Layout
         icon: <Ionicons name="restaurant" size={24} color="white" />,
         text: "Masak",
       }}

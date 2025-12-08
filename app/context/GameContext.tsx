@@ -18,7 +18,7 @@ import {
 } from "@/app/types/gameTypes";
 
 // --- Konstanta ---
-const STORAGE_KEY = "@CulawarnaGame:SaveData_V"; // Ganti version biar fresh
+const STORAGE_KEY = "@CulawarnaGame:SaveData_V7"; // Ganti version biar fresh
 const COOK_TIME_MS = 3 * 60 * 1000;
 const XP_PER_LEVEL = 10; // XP yang dibutuhkan untuk naik level
 const KUIS_ENERGY_COST = 25;
@@ -46,7 +46,8 @@ const initialState: GameState = {
   koin: 15,
   energi: 100,
   maxEnergi: 100,
-  volume: 1,
+  volume: 0.7,    // Default BGM
+  sfxVolume: 1.0, // Default SFX (Full)
   phase: "Baby",
   selectedAppearance: "Default",
   currentOutfit: {
@@ -155,14 +156,16 @@ const initialState: GameState = {
   lastQuizTimestamp: 0,
   isLoading: true,
   isMinigameActive: false,
-  ownedBaju: ["baju-baduy", "baju-batik", "baju-minang"],
-  ownedTopi: ["peci-hitam"],
+  ownedBaju: [],
+  ownedTopi: [],
   ownedAksesoris: [],
 };
 
 // --- REDUCER ---
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
+    case "SET_SFX_VOLUME":
+      return { ...state, sfxVolume: action.payload };
     case "SET_LOADING":
       return { ...state, isLoading: action.payload };
     case "SET_VOLUME":

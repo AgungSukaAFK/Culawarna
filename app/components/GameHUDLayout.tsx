@@ -1,5 +1,6 @@
 // Di dalam file: app/components/GameHUDLayout.tsx
 
+import { useSFX } from "@/app/_layout"; // <-- 1. Import useSFX
 import { useGameContext } from "@/app/context/GameContext";
 import {
   AppearanceMode,
@@ -12,7 +13,6 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { AVPlaybackSource, ResizeMode, Video } from "expo-av";
 import { BlurView } from "expo-blur";
-import Constants from "expo-constants";
 import { router, useRouter } from "expo-router";
 import React, { ReactNode, useState } from "react";
 import {
@@ -35,24 +35,21 @@ const ModalHelp: React.FC<{
   content?: HelpContent;
   onClose: () => void;
 }> = ({ visible, content, onClose }) => {
+  const { playBtnSound } = useSFX(); // Sound Hook
+
   if (!content) return null;
 
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
       <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
         <View style={styles.helpModalContainer}>
           <View style={styles.helpHeader}>
             <Ionicons name="help-circle" size={40} color="#4A2A00" />
             <Text style={styles.helpTitle}>{content.title}</Text>
           </View>
-
+          
           <ScrollView style={styles.helpScroll}>
-            {typeof content.body === "string" ? (
+            {typeof content.body === 'string' ? (
               <Text style={styles.helpBody}>{content.body}</Text>
             ) : (
               content.body
@@ -61,7 +58,10 @@ const ModalHelp: React.FC<{
 
           <TouchableOpacity
             style={[styles.modalButton, styles.kembaliButton]}
-            onPress={onClose}
+            onPress={() => {
+              playBtnSound(); // SFX
+              onClose();
+            }}
           >
             <Text style={styles.modalButtonText}>Saya Mengerti</Text>
           </TouchableOpacity>
@@ -72,56 +72,51 @@ const ModalHelp: React.FC<{
 };
 
 // --- KOMPONEN NAVIGASI BUTTON ---
-const NavButton: React.FC<NavButtonProps> = ({ onPress, icon, text }) => (
-  <TouchableOpacity style={styles.navButton} onPress={onPress}>
-    {icon}
-    <Text style={styles.navButtonText}>{text}</Text>
-  </TouchableOpacity>
-);
+const NavButton: React.FC<NavButtonProps> = ({ onPress, icon, text }) => {
+  const { playBtnSound } = useSFX();
+  
+  return (
+    <TouchableOpacity 
+      style={styles.navButton} 
+      onPress={() => {
+        playBtnSound(); // SFX
+        onPress();
+      }}
+    >
+      {icon}
+      <Text style={styles.navButtonText}>{text}</Text>
+    </TouchableOpacity>
+  );
+};
 
-// --- MODAL PENGATURAN (UPDATE: OPSI TAMPILAN) ---
+// --- MODAL PENGATURAN (UPDATE: SLIDER SFX) ---
 const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
   visible,
   onClose,
   onExit,
   volume,
   setVolume,
-  selectedAppearance, // Props Baru
-  setAppearance, // Props Baru
+  sfxVolume,      // <-- Props Baru
+  setSfxVolume,   // <-- Props Baru
+  selectedAppearance,
+  setAppearance,
   onGunakanEnergi,
   onTambahEnergi,
   onDapatKoin,
   onDapatXP,
 }) => {
-  const appearanceOptions: AppearanceMode[] = [
-    "Default",
-    "Baby",
-    "Anak",
-    "Remaja",
-    "Dewasa",
-  ];
+  const { playBtnSound } = useSFX();
+  const appearanceOptions: AppearanceMode[] = ["Default", "Baby", "Anak", "Remaja", "Dewasa"];
 
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <BlurView
-        intensity={10}
-        tint={Platform.OS === "web" ? "light" : "dark"}
-        style={styles.modalBackdrop}
-      >
+    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
+      <BlurView intensity={10} tint={Platform.OS === "web" ? "light" : "dark"} style={styles.modalBackdrop}>
         <View style={styles.modalContainer}>
-          <ScrollView
-            contentContainerStyle={{ alignItems: "center" }}
-            style={{ width: "100%" }}
-          >
+          <ScrollView contentContainerStyle={{ alignItems: "center" }} style={{ width: "100%" }}>
             <Text style={styles.modalTitle}>Pengaturan</Text>
 
-            {/* Volume Slider */}
-            <Text style={styles.sliderLabel}>Volume musik</Text>
+            {/* BGM Slider */}
+            <Text style={styles.sliderLabel}>Volume Musik</Text>
             <Slider
               style={styles.slider}
               minimumValue={0}
@@ -133,75 +128,71 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
               thumbTintColor="#4B0082"
             />
 
-            {/* Pilihan Tampilan (Appearance) */}
-            <Text style={[styles.sliderLabel, { marginTop: 15 }]}>
-              Tampilan Si Cula
-            </Text>
-            <Text style={styles.subLabel}>(Ubah visual tanpa ubah level)</Text>
+            {/* SFX Slider (BARU) */}
+            <Text style={styles.sliderLabel}>Volume Efek Suara</Text>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={1}
+              value={sfxVolume}
+              onValueChange={setSfxVolume} // Gunakan setSfxVolume
+              minimumTrackTintColor="#E67E22" // Warna Oranye
+              maximumTrackTintColor="#D3D3D3"
+              thumbTintColor="#E67E22"
+            />
 
+            {/* Appearance */}
+            <Text style={[styles.sliderLabel, { marginTop: 15 }]}>Tampilan Si Cula</Text>
+            <Text style={styles.subLabel}>(Ubah visual tanpa ubah level)</Text>
+            
             <View style={styles.appearanceGrid}>
               {appearanceOptions.map((mode) => (
                 <TouchableOpacity
                   key={mode}
                   style={[
                     styles.appearanceButton,
-                    selectedAppearance === mode &&
-                      styles.appearanceButtonActive,
+                    selectedAppearance === mode && styles.appearanceButtonActive
                   ]}
-                  onPress={() => setAppearance(mode)}
+                  onPress={() => {
+                    playBtnSound(); // SFX
+                    setAppearance(mode);
+                  }}
                 >
-                  <Text
-                    style={[
-                      styles.appearanceText,
-                      selectedAppearance === mode &&
-                        styles.appearanceTextActive,
-                    ]}
-                  >
+                  <Text style={[
+                    styles.appearanceText,
+                    selectedAppearance === mode && styles.appearanceTextActive
+                  ]}>
                     {mode}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Debug Section */}
+            {/* Debug Buttons */}
             <View style={styles.debugSection}>
               <Text style={styles.debugTitle}>-- Tombol Testing --</Text>
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={onGunakanEnergi}
-              >
+              <TouchableOpacity style={styles.debugButton} onPress={() => { playBtnSound(); onGunakanEnergi?.(); }}>
                 <Text>Gunakan Energi (-10)</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={onTambahEnergi}
-              >
+              <TouchableOpacity style={styles.debugButton} onPress={() => { playBtnSound(); onTambahEnergi?.(); }}>
                 <Text>Tambah Energi (+20)</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={onDapatKoin}
-              >
+              <TouchableOpacity style={styles.debugButton} onPress={() => { playBtnSound(); onDapatKoin?.(); }}>
                 <Text>Dapat Koin (+5)</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.debugButton} onPress={onDapatXP}>
+              <TouchableOpacity style={styles.debugButton} onPress={() => { playBtnSound(); onDapatXP?.(); }}>
                 <Text>Dapat XP (+3)</Text>
               </TouchableOpacity>
             </View>
 
+            {/* Tombol Bawah */}
             <View style={styles.modalButtonRow}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.kembaliButton]}
-                onPress={onClose}
-              >
+              <TouchableOpacity style={[styles.modalButton, styles.kembaliButton]} onPress={() => { playBtnSound(); onClose(); }}>
                 <Ionicons name="arrow-back" size={16} color="white" />
                 <Text style={styles.modalButtonText}>Kembali</Text>
               </TouchableOpacity>
               {Platform.OS !== "web" && (
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.keluarButton]}
-                  onPress={onExit}
-                >
+                <TouchableOpacity style={[styles.modalButton, styles.keluarButton]} onPress={() => { playBtnSound(); onExit(); }}>
                   <Ionicons name="home-outline" size={16} color="white" />
                   <Text style={styles.modalButtonText}>Homescreen</Text>
                 </TouchableOpacity>
@@ -215,55 +206,38 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
 };
 
 // --- MODAL NAVIGASI EKSTERNAL ---
-const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
-  visible,
-  onClose,
-  onNavigate,
-}) => {
+const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({ visible, onClose, onNavigate }) => {
+  const { playBtnSound } = useSFX();
+  
+  const handleNav = (path: string) => {
+    playBtnSound();
+    if (path === '/toko' || path === '/kelas' || path === '/pantai') {
+      router.push(path as any);
+    }
+  };
+
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <BlurView
-        intensity={10}
-        tint={Platform.OS === "web" ? "light" : "dark"}
-        style={styles.modalBackdrop}
-      >
+    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
+      <BlurView intensity={10} tint={Platform.OS === "web" ? "light" : "dark"} style={styles.modalBackdrop}>
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Pergi ke...</Text>
           <View style={styles.navigasiGrid}>
-            <TouchableOpacity
-              style={styles.navigasiModalButton}
-              onPress={() => router.push("/toko")}
-            >
+            <TouchableOpacity style={styles.navigasiModalButton} onPress={() => handleNav("/toko")}>
               <MaterialCommunityIcons name="store" size={30} color="#4A2A00" />
               <Text style={styles.navigasiModalText}>Toko Budaya</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navigasiModalButton}
-              onPress={() => router.push("/kelas")}
-            >
+            <TouchableOpacity style={styles.navigasiModalButton} onPress={() => handleNav("/kelas")}>
               <Ionicons name="school" size={30} color="#4A2A00" />
               <Text style={styles.navigasiModalText}>Kelas Budaya</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navigasiModalButton}
-              onPress={() => router.push("/pantai")}
-            >
+            <TouchableOpacity style={styles.navigasiModalButton} onPress={() => handleNav("/pantai")}>
               <Ionicons name="planet" size={30} color="#4A2A00" />
               <Text style={styles.navigasiModalText}>Pantai</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={[
-              styles.modalButton,
-              styles.kembaliButton,
-              { alignSelf: "center", marginTop: 20 },
-            ]}
-            onPress={onClose}
+          <TouchableOpacity 
+            style={[styles.modalButton, styles.kembaliButton, { alignSelf: "center", marginTop: 20 }]} 
+            onPress={() => { playBtnSound(); onClose(); }}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
             <Text style={styles.modalButtonText}>Kembali</Text>
@@ -274,7 +248,7 @@ const ModalNavigasiEksternal: React.FC<ModalNavigasiProps> = ({
   );
 };
 
-// --- INTERFACE PROPS ---
+// --- PROPS UTAMA ---
 interface GameHUDLayoutProps {
   children: ReactNode;
   backgroundImage?: ImageSourcePropType;
@@ -301,6 +275,7 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
 }) => {
   const router = useRouter();
   const { state, dispatch } = useGameContext();
+  const { playBtnSound } = useSFX(); // SFX Hook
 
   const [isPengaturanVisible, setPengaturanVisible] = useState<boolean>(false);
   const [isEnergiVisible, setEnergiVisible] = useState<boolean>(false);
@@ -319,10 +294,8 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
     }
   };
 
-  const handleGunakanEnergi = () =>
-    dispatch({ type: "GUNAKAN_ENERGI", payload: 10 });
-  const handleTambahEnergi = () =>
-    dispatch({ type: "TAMBAH_ENERGI", payload: 20 });
+  const handleGunakanEnergi = () => dispatch({ type: "GUNAKAN_ENERGI", payload: 10 });
+  const handleTambahEnergi = () => dispatch({ type: "TAMBAH_ENERGI", payload: 20 });
   const handleDapatKoin = () => dispatch({ type: "TAMBAH_KOIN", payload: 5 });
   const handleDapatXP = () => dispatch({ type: "TAMBAH_XP", payload: 3 });
 
@@ -337,14 +310,13 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
     );
   }
 
-  // Wrapper untuk Background (Video/Image)
   const ContentWrapper = ({ children }: { children: ReactNode }) => {
     if (backgroundVideo) {
       return (
         <View style={styles.container}>
           <Video
             source={backgroundVideo}
-            style={StyleSheet.absoluteFill}
+            style={styles.videoStyle}
             resizeMode={ResizeMode.COVER}
             isLooping
             shouldPlay
@@ -360,11 +332,7 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
         </ImageBackground>
       );
     } else {
-      return (
-        <View style={[styles.container, { backgroundColor: "#87CEEB" }]}>
-          {children}
-        </View>
-      );
+      return <View style={[styles.container, { backgroundColor: '#87CEEB' }]}>{children}</View>;
     }
   };
 
@@ -377,27 +345,18 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
             <View style={styles.hudAtas}>
               <View style={styles.hudInfoKiri}>
                 <Text style={styles.textNama}>Si Cula</Text>
-                <Text style={styles.textXP}>
-                  XP {state.xp}/{state.xpToNextLevel} - {state.phase}
-                </Text>
+                <Text style={styles.textXP}>XP {state.xp}/{state.xpToNextLevel} - {state.phase}</Text>
               </View>
               <View style={styles.hudInfoTengah}>
-                <TouchableOpacity
-                  style={styles.tombolEnergi}
-                  onPress={() => setEnergiVisible(!isEnergiVisible)}
+                <TouchableOpacity 
+                  style={styles.tombolEnergi} 
+                  onPress={() => {
+                    playBtnSound();
+                    setEnergiVisible(!isEnergiVisible);
+                  }}
                 >
-                  <View
-                    style={[
-                      styles.energiFill,
-                      { height: `${energiPercentage}%` },
-                    ]}
-                  />
-                  <Ionicons
-                    name="flash"
-                    size={24}
-                    color="white"
-                    style={styles.energiIcon}
-                  />
+                  <View style={[styles.energiFill, { height: `${energiPercentage}%` }]} />
+                  <Ionicons name="flash" size={24} color="white" style={styles.energiIcon} />
                 </TouchableOpacity>
               </View>
               <View style={styles.hudInfoKanan}>
@@ -408,16 +367,17 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
 
             {isEnergiVisible && (
               <View style={styles.energiModal}>
-                <Text style={styles.energiText}>
-                  Energi: {state.energi}/{state.maxEnergi}
-                </Text>
+                <Text style={styles.energiText}>Energi: {state.energi}/{state.maxEnergi}</Text>
               </View>
             )}
 
             {helpContent && (
-              <TouchableOpacity
-                style={styles.helpButton}
-                onPress={() => setHelpVisible(true)}
+              <TouchableOpacity 
+                style={styles.helpButton} 
+                onPress={() => {
+                  playBtnSound();
+                  setHelpVisible(true);
+                }}
               >
                 <Ionicons name="help" size={30} color="white" />
               </TouchableOpacity>
@@ -430,43 +390,37 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
         {!hideUI && (
           <>
             <View style={styles.intraNavContainer}>
-              <TouchableOpacity
-                style={styles.intraNavButton}
-                onPress={onPressNavLeft}
+              <TouchableOpacity 
+                style={styles.intraNavButton} 
+                onPress={() => { playBtnSound(); onPressNavLeft(); }}
               >
                 <Ionicons name="arrow-back-circle" size={50} color="#8A2BE2" />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.intraNavButton,
-                  { opacity: onPressNavRight.name === "" ? 0 : 0.7 },
-                ]}
-                onPress={onPressNavRight}
-                disabled={onPressNavRight.name === ""}
+              
+              <TouchableOpacity 
+                style={[styles.intraNavButton, { opacity: onPressNavRight.name === '' ? 0 : 0.7 }]} 
+                onPress={() => { playBtnSound(); onPressNavRight(); }} 
+                disabled={onPressNavRight.name === ''}
               >
-                <Ionicons
-                  name="arrow-forward-circle"
-                  size={50}
-                  color="#8A2BE2"
-                />
+                 <Ionicons name="arrow-forward-circle" size={50} color="#8A2BE2" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.hudBawah}>
-              <NavButton
-                onPress={() => setNavigasiVisible(true)}
-                icon={<Ionicons name="map" size={24} color="white" />}
-                text="Navigasi"
+              <NavButton 
+                onPress={() => setNavigasiVisible(true)} 
+                icon={<Ionicons name="map" size={24} color="white" />} 
+                text="Navigasi" 
               />
-              <NavButton
-                onPress={middleNavButton.onPress}
-                icon={middleNavButton.icon}
-                text={middleNavButton.text}
+              <NavButton 
+                onPress={middleNavButton.onPress} 
+                icon={middleNavButton.icon} 
+                text={middleNavButton.text} 
               />
-              <NavButton
-                onPress={() => setPengaturanVisible(true)}
-                icon={<Ionicons name="cog" size={24} color="white" />}
-                text="Pengaturan"
+              <NavButton 
+                onPress={() => setPengaturanVisible(true)} 
+                icon={<Ionicons name="cog" size={24} color="white" />} 
+                text="Pengaturan" 
               />
             </View>
           </>
@@ -478,344 +432,80 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
           visible={isPengaturanVisible}
           onClose={() => setPengaturanVisible(false)}
           onExit={handleExitToHome}
+          
           volume={state.volume}
-          setVolume={(val: any) =>
-            dispatch({ type: "SET_VOLUME", payload: val })
-          }
-          // Props untuk Tampilan
+          setVolume={(val: any) => dispatch({ type: "SET_VOLUME", payload: val })}
+          
+          sfxVolume={state.sfxVolume} // Pass State
+          setSfxVolume={(val: any) => dispatch({ type: "SET_SFX_VOLUME", payload: val })} // Pass Setter
+
           selectedAppearance={state.selectedAppearance || "Default"}
-          setAppearance={(mode) =>
-            dispatch({ type: "SET_APPEARANCE", payload: mode })
-          }
-          // Debug
+          setAppearance={(mode) => dispatch({ type: "SET_APPEARANCE", payload: mode })}
+          
           onGunakanEnergi={handleGunakanEnergi}
           onTambahEnergi={handleTambahEnergi}
           onDapatKoin={handleDapatKoin}
           onDapatXP={handleDapatXP}
         />
-        <ModalNavigasiEksternal
-          visible={isNavigasiVisible}
-          onClose={() => setNavigasiVisible(false)}
-          onNavigate={handleNavigasiEksternal}
-        />
+        <ModalNavigasiEksternal visible={isNavigasiVisible} onClose={() => setNavigasiVisible(false)} onNavigate={handleNavigasiEksternal} />
+        
+        <ModalHelp visible={isHelpVisible} content={helpContent} onClose={() => setHelpVisible(false)} />
 
-        <ModalHelp
-          visible={isHelpVisible}
-          content={helpContent}
-          onClose={() => setHelpVisible(false)}
-        />
       </SafeAreaView>
     </ContentWrapper>
   );
 };
 
-// --- STYLESHEET ---
+// --- STYLESHEET (Copy paste dari file sebelumnya, tidak berubah) ---
 const styles = StyleSheet.create({
-  container: { flex: 1, width: "100%", height: "100%" },
+  container: { flex: 1, width: "100%", height: "100%", position: "relative", overflow: "hidden", backgroundColor: "black" },
+  videoStyle: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%", position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
   safeArea: { flex: 1 },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#D2B48C",
-  },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#D2B48C" },
   loadingText: { marginTop: 10, fontSize: 16, color: "#4A2A00" },
-  hudAtas: {
-    position: "absolute",
-    top:
-      Platform.OS === "web"
-        ? 10
-        : Platform.OS === "android"
-        ? Constants.statusBarHeight + 10
-        : 50,
-    left: 20,
-    right: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    zIndex: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    elevation: 2,
-    maxWidth: 800,
-    alignSelf: "center",
-  },
+  hudAtas: { position: "absolute", top: Platform.OS === "web" ? 10 : 50, left: 20, right: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center", zIndex: 10, backgroundColor: "rgba(255, 255, 255, 0.7)", paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, elevation: 2, maxWidth: 800, alignSelf: "center" },
   hudInfoKiri: { flex: 1, alignItems: "flex-start" },
   hudInfoTengah: { flex: 1, alignItems: "center" },
-  hudInfoKanan: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
+  hudInfoKanan: { flex: 1, flexDirection: "row", justifyContent: "flex-end", alignItems: "center" },
   textNama: { fontSize: 20, fontWeight: "bold", color: "black" },
   textXP: { fontSize: 14, color: "black" },
   textKoin: { fontSize: 18, fontWeight: "bold", color: "black", marginLeft: 5 },
-  tombolEnergi: {
-    backgroundColor: "#555",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "white",
-    elevation: 3,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-    cursor: "pointer",
-  },
-  energiFill: {
-    backgroundColor: "#FFC107",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  energiIcon: {
-    zIndex: 1,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
-  energiModal: {
-    position: "absolute",
-    top: Platform.OS === "web" ? 70 : 110,
-    alignSelf: "center",
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 10,
-    elevation: 5,
-    zIndex: 20,
-  },
+  tombolEnergi: { backgroundColor: "#555", width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: "white", elevation: 3, justifyContent: "center", alignItems: "center", overflow: "hidden", cursor: "pointer" },
+  energiFill: { backgroundColor: "#FFC107", position: "absolute", bottom: 0, left: 0, right: 0 },
+  energiIcon: { zIndex: 1, textShadowColor: "rgba(0, 0, 0, 0.3)", textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
+  energiModal: { position: "absolute", top: Platform.OS === "web" ? 70 : 110, alignSelf: "center", backgroundColor: "white", padding: 10, borderRadius: 10, elevation: 5, zIndex: 20 },
   energiText: { fontSize: 14, color: "#333" },
-
-  helpButton: {
-    position: "absolute",
-    top: Platform.OS === "web" ? 70 : 110,
-    right: 20,
-    width: 45,
-    height: 45,
-    borderRadius: 25,
-    backgroundColor: "#2980B9",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 15,
-    borderWidth: 2,
-    borderColor: "white",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-  },
-  helpModalContainer: {
-    width: "85%",
-    maxWidth: 400,
-    maxHeight: "70%",
-    backgroundColor: "#FFF8E7",
-    borderRadius: 20,
-    borderWidth: 4,
-    borderColor: "#4A2A00",
-    padding: 20,
-    alignItems: "center",
-  },
-  helpHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-    borderBottomWidth: 2,
-    borderBottomColor: "#D2B48C",
-    paddingBottom: 10,
-    width: "100%",
-    justifyContent: "center",
-  },
-  helpTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#4A2A00",
-    marginLeft: 10,
-  },
+  helpButton: { position: "absolute", top: Platform.OS === "web" ? 70 : 110, right: 20, width: 45, height: 45, borderRadius: 25, backgroundColor: "#2980B9", justifyContent: "center", alignItems: "center", zIndex: 15, borderWidth: 2, borderColor: "white", elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 2 },
+  helpModalContainer: { width: "85%", maxWidth: 400, maxHeight: "70%", backgroundColor: "#FFF8E7", borderRadius: 20, borderWidth: 4, borderColor: "#4A2A00", padding: 20, alignItems: "center" },
+  helpHeader: { flexDirection: "row", alignItems: "center", marginBottom: 15, borderBottomWidth: 2, borderBottomColor: "#D2B48C", paddingBottom: 10, width: "100%", justifyContent: "center" },
+  helpTitle: { fontSize: 22, fontWeight: "bold", color: "#4A2A00", marginLeft: 10 },
   helpScroll: { width: "100%", marginBottom: 20 },
   helpBody: { fontSize: 16, color: "#333", lineHeight: 24, textAlign: "left" },
-
-  intraNavContainer: {
-    position: "absolute",
-    bottom: 100,
-    left: 15,
-    right: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    zIndex: 5,
-    maxWidth: 800,
-    alignSelf: "center",
-  },
+  intraNavContainer: { position: "absolute", bottom: 100, left: 15, right: 15, flexDirection: "row", justifyContent: "space-between", zIndex: 5, maxWidth: 800, alignSelf: "center" },
   intraNavButton: { opacity: 0.7, cursor: "pointer" },
-  hudBawah: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 90,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "flex-start",
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 10,
-    width: "100%",
-    maxWidth: 800,
-    alignSelf: "center",
-  },
-  navButton: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#8A2BE2",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    width: 100,
-    height: 70,
-    elevation: 3,
-    borderBottomWidth: 4,
-    borderColor: "#4B0082",
-    cursor: "pointer",
-  },
-  navButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 12,
-    marginTop: 4,
-  },
+  hudBawah: { position: "absolute", bottom: 0, left: 0, right: 0, height: 90, flexDirection: "row", justifyContent: "space-around", alignItems: "flex-start", backgroundColor: "rgba(255, 255, 255, 0.7)", borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 10, width: "100%", maxWidth: 800, alignSelf: "center" },
+  navButton: { flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: "#8A2BE2", paddingVertical: 8, paddingHorizontal: 10, borderRadius: 20, width: 100, height: 70, elevation: 3, borderBottomWidth: 4, borderColor: "#4B0082", cursor: "pointer" },
+  navButtonText: { color: "white", fontWeight: "bold", fontSize: 12, marginTop: 4 },
   modalBackdrop: { flex: 1, justifyContent: "center", alignItems: "center" },
-  modalContainer: {
-    width: "90%",
-    maxWidth: 340,
-    maxHeight: "80%",
-    backgroundColor: "#FFB347",
-    borderRadius: 20,
-    borderWidth: 5,
-    borderColor: "#4A2A00",
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#4A2A00",
-    marginBottom: 20,
-    alignSelf: "center",
-  },
-  sliderLabel: {
-    fontSize: 16,
-    color: "#4A2A00",
-    marginBottom: 10,
-    alignSelf: "flex-start",
-  },
-  subLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 10,
-    fontStyle: "italic",
-  },
+  modalContainer: { width: "90%", maxWidth: 340, maxHeight: "80%", backgroundColor: "#FFB347", borderRadius: 20, borderWidth: 5, borderColor: "#4A2A00", padding: 20 },
+  modalTitle: { fontSize: 24, fontWeight: "bold", color: "#4A2A00", marginBottom: 20, alignSelf: "center" },
+  sliderLabel: { fontSize: 16, color: "#4A2A00", marginBottom: 10, alignSelf: "flex-start" },
   slider: { width: "100%", height: 40, marginBottom: 20 },
-  modalButtonRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    marginTop: 20,
-  },
-  modalButton: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    borderBottomWidth: 4,
-    cursor: "pointer",
-  },
-  modalButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginLeft: 5,
-  },
+  modalButtonRow: { flexDirection: "row", justifyContent: "space-around", width: "100%", marginTop: 20 },
+  modalButton: { flexDirection: "row", paddingVertical: 8, paddingHorizontal: 15, borderRadius: 15, alignItems: "center", justifyContent: "center", borderBottomWidth: 4, cursor: "pointer" },
+  modalButtonText: { color: "white", fontSize: 14, fontWeight: "bold", marginLeft: 5 },
   kembaliButton: { backgroundColor: "#8A2BE2", borderColor: "#4B0082" },
   keluarButton: { backgroundColor: "#DC143C", borderColor: "#8B0000" },
   navigasiGrid: { width: "100%", alignItems: "center" },
-  navigasiModalButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#4A2A00",
-    width: "100%",
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 10,
-    cursor: "pointer",
-  },
-  navigasiModalText: {
-    color: "#4A2A00",
-    fontWeight: "bold",
-    fontSize: 16,
-    marginLeft: 15,
-  },
-  debugSection: {
-    width: "100%",
-    borderTopWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: "#4A2A00",
-    paddingVertical: 15,
-    marginVertical: 15,
-    alignItems: "center",
-  },
-  debugTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#4A2A00",
-    marginBottom: 10,
-  },
-  debugButton: {
-    backgroundColor: "#FFF",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-    borderColor: "#CCC",
-    borderWidth: 1,
-    cursor: "pointer",
-  },
-
-  // Styles untuk Appearance Grid
-  appearanceGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    width: "100%",
-    marginBottom: 10,
-  },
-  appearanceButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "#4A2A00",
-    margin: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
-  },
-  appearanceButtonActive: {
-    backgroundColor: "#4A2A00",
-    borderColor: "#4A2A00",
-  },
-  appearanceText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#4A2A00",
-  },
-  appearanceTextActive: {
-    color: "white",
-  },
+  navigasiModalButton: { backgroundColor: "rgba(255, 255, 255, 0.7)", padding: 15, borderRadius: 10, borderWidth: 2, borderColor: "#4A2A00", width: "100%", alignItems: "center", flexDirection: "row", marginBottom: 10, cursor: "pointer" },
+  navigasiModalText: { color: "#4A2A00", fontWeight: "bold", fontSize: 16, marginLeft: 15 },
+  debugSection: { width: "100%", borderTopWidth: 2, borderBottomWidth: 2, borderColor: "#4A2A00", paddingVertical: 15, marginVertical: 15, alignItems: "center" },
+  debugTitle: { fontSize: 16, fontWeight: "bold", color: "#4A2A00", marginBottom: 10 },
+  debugButton: { backgroundColor: "#FFF", padding: 10, borderRadius: 5, marginTop: 10, borderColor: "#CCC", borderWidth: 1, cursor: "pointer" },
+  subLabel: { fontSize: 12, color: "#666", marginBottom: 10, fontStyle: "italic" },
+  appearanceGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", width: "100%", marginBottom: 10 },
+  appearanceButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 2, borderColor: "#4A2A00", margin: 4, backgroundColor: "rgba(255, 255, 255, 0.5)" },
+  appearanceButtonActive: { backgroundColor: "#4A2A00", borderColor: "#4A2A00" },
+  appearanceText: { fontSize: 14, fontWeight: "bold", color: "#4A2A00" },
+  appearanceTextActive: { color: "white" },
 });

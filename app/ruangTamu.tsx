@@ -1,14 +1,20 @@
 // Di dalam file: app/ruangTamu.tsx
 
+import { useSFX } from "@/app/_layout"; // <-- Import useSFX
 import { CulaCharacter } from "@/app/components/CulaCharacter";
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
-import { HelpContent, Outfit } from "@/app/types/gameTypes";
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { HelpContent } from "@/app/types/gameTypes";
+import {
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ImageSourcePropType,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,6 +23,7 @@ import {
   View,
 } from "react-native";
 
+// Definisikan Props secara lokal untuk keamanan
 interface ModalDekorasiProps {
   visible: boolean;
   onClose: () => void;
@@ -25,21 +32,22 @@ interface ModalDekorasiProps {
 // --- MODAL DEKORASI ---
 const ModalDekorasi: React.FC<ModalDekorasiProps> = ({ visible, onClose }) => {
   const { state, dispatch } = useGameContext();
+  const { playSfx, playBtnSound } = useSFX(); 
 
-  const handlePasangDekorasi = (
-    itemType: keyof Outfit,
-    itemId: string | null
-  ) => {
+  const handleGantiDekorasi = (itemId: string | null) => {
+    playSfx("tap"); // SFX Tap saat ganti dekorasi
+
     dispatch({
       type: "GANTI_OUTFIT",
-      payload: { itemType, itemId },
+      payload: { itemType: "aksesorisId", itemId },
     });
   };
 
-  const getIconForItem = (itemId: string) => {
-    if (itemId.includes("golok")) return "gavel";
-    if (itemId.includes("lukisan")) return "image";
-    return "star";
+  // Helper Label
+  const getLabel = (id: string) => {
+    if (id === "dekor-golok") return "Golok";
+    if (id === "dekor-bedug") return "Bedug";
+    return id;
   };
 
   return (
@@ -51,51 +59,50 @@ const ModalDekorasi: React.FC<ModalDekorasiProps> = ({ visible, onClose }) => {
     >
       <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Pilih Dekorasi</Text>
+          <Text style={styles.modalTitle}>Koleksi Dekorasi</Text>
           <ScrollView style={{ width: "100%" }}>
-            <View style={styles.dekorasiGrid}>
-              {/* Tombol Lepas */}
+            <View style={styles.lemariGrid}>
+              
+              {/* Opsi: Lepas */}
               <TouchableOpacity
                 style={[
-                  styles.itemDekorasi,
+                  styles.itemDekor,
                   state.currentOutfit.aksesorisId === null &&
                     styles.itemSelected,
                 ]}
-                onPress={() => handlePasangDekorasi("aksesorisId", null)}
+                onPress={() => handleGantiDekorasi(null)}
               >
-                <Ionicons name="close-circle" size={40} color="#4A2A00" />
-                <Text style={styles.itemDekorasiText}>Lepas</Text>
+                <Ionicons name="close-circle-outline" size={35} color="#4A2A00" />
+                <Text style={styles.itemDekorText}>Lepas</Text>
               </TouchableOpacity>
 
-              {/* List Item */}
+              {/* Opsi: List Dekorasi Milik Player */}
               {state.ownedAksesoris.map((itemId) => (
                 <TouchableOpacity
                   key={itemId}
                   style={[
-                    styles.itemDekorasi,
+                    styles.itemDekor,
                     state.currentOutfit.aksesorisId === itemId &&
                       styles.itemSelected,
                   ]}
-                  onPress={() => handlePasangDekorasi("aksesorisId", itemId)}
+                  onPress={() => handleGantiDekorasi(itemId)}
                 >
-                  <FontAwesome5
-                    name={getIconForItem(itemId) as any}
-                    size={40}
-                    color="#4A2A00"
-                  />
-                  <Text style={styles.itemDekorasiText}>
-                    {itemId.replace("dekor-", "")}
-                  </Text>
+                  <FontAwesome5 name="gavel" size={30} color="#4A2A00" />
+                  <Text style={styles.itemDekorText}>{getLabel(itemId)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </ScrollView>
+
           <TouchableOpacity
             style={[styles.modalButton, styles.kembaliButton]}
-            onPress={onClose}
+            onPress={() => {
+              playBtnSound(); // SFX Tutup Modal
+              onClose();
+            }}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
-            <Text style={styles.modalButtonText}>Kembali</Text>
+            <Text style={styles.modalButtonText}>Tutup</Text>
           </TouchableOpacity>
         </View>
       </BlurView>
@@ -103,62 +110,64 @@ const ModalDekorasi: React.FC<ModalDekorasiProps> = ({ visible, onClose }) => {
   );
 };
 
-// --- SCREEN UTAMA ---
 export default function RuangTamuScreen() {
   const router = useRouter();
   const { state } = useGameContext();
-  const [isDekorasiVisible, setDekorasiVisible] = useState<boolean>(false);
+  const [isModalVisible, setModalVisible] = useState(false);
 
-  // --- KONTEN BANTUAN (Dipindahkan ke sini) ---
+  // --- KONTEN BANTUAN (Dipindah ke dalam komponen) ---
   const ruangTamuHelpContent: HelpContent = {
     title: "Ruang Tamu 🛋️",
     body: (
       <View>
-        <Text style={styles.helpText}>Selamat datang di Ruang Tamu!</Text>
         <Text style={styles.helpText}>
-          Di sini kamu bisa menghias rumah Si Cula agar terlihat lebih menarik.
-        </Text>
-
-        <Text style={[styles.helpText, { marginTop: 10 }]}>
-          <Text style={styles.bold}>Cara Menghias:</Text>
+          Tempat bersantai Si Cula! Kamu bisa menghias ruangan ini dengan dekorasi
+          khas Banten.
         </Text>
         <Text style={styles.helpText}>
-          • Tekan tombol <Text style={styles.bold}>Dekorasi</Text> untuk membuka
-          koleksi hiasan.
-          {"\n"}• Pilih item yang sudah dibeli (misal: Pajangan Golok).
-          {"\n"}• Tekan <Text style={styles.bold}>Lepas</Text> untuk mencopot
-          hiasan.
+          • <Text style={styles.bold}>Dekorasi:</Text> Beli item dekorasi di Toko
+          Budaya, lalu pasang di sini.
+          {"\n"}• <Text style={styles.bold}>Contoh:</Text> Pajangan Golok, Bedug,
+          dll.
         </Text>
       </View>
     ),
   };
 
-  // --- LOGIKA GANTI BACKGROUND ---
-  const backgroundSource =
-    state.currentOutfit.aksesorisId === "dekor-golok"
-      ? require("@/assets/images/guest-deco.png")
-      : require("@/assets/images/guest.png");
+  // Mapping Gambar Dekorasi (Opsional)
+  const getDekorasiImage = (
+    id: string | null
+  ): ImageSourcePropType | undefined => {
+    if (id === "dekor-golok")
+      return require("@/assets/images/deco/golok.png");
+    if (id === "dekor-bedug")
+      return require("@/assets/images/deco/bedug.png");
+    return undefined;
+  };
 
   return (
     <GameHUDLayout
-      backgroundImage={backgroundSource}
+      backgroundImage={
+        state.currentOutfit.aksesorisId
+          ? require("@/assets/images/guest-deco.png") // BG saat ada dekorasi
+          : require("@/assets/images/guest.png") // BG polos
+      }
       onPressNavLeft={() => router.replace("/kamar")}
       onPressNavRight={() => router.replace("/dapur")}
       helpContent={ruangTamuHelpContent}
       middleNavButton={{
-        onPress: () => setDekorasiVisible(true),
-        icon: <FontAwesome5 name="couch" size={24} color="white" />,
+        onPress: () => setModalVisible(true), // SFX handled by Layout
+        icon: <MaterialCommunityIcons name="lamp" size={24} color="white" />,
         text: "Dekorasi",
       }}
       pageModal={
         <ModalDekorasi
-          visible={isDekorasiVisible}
-          onClose={() => setDekorasiVisible(false)}
+          visible={isModalVisible}
+          onClose={() => setModalVisible(false)}
         />
       }
     >
       <View style={styles.kontenArea}>
-        {/* Karakter */}
         <CulaCharacter style={styles.karakter} />
       </View>
     </GameHUDLayout>
@@ -166,18 +175,11 @@ export default function RuangTamuScreen() {
 }
 
 const styles = StyleSheet.create({
-  // --- Styles Help ---
-  helpText: {
-    fontSize: 16,
-    color: "#333",
-    lineHeight: 24,
-    marginBottom: 5,
-  },
-  bold: {
-    fontWeight: "bold",
-    color: "#4A2A00",
-  },
-  // --- Styles Page ---
+  // Styles Help
+  helpText: { fontSize: 16, color: "#333", lineHeight: 24, marginBottom: 5 },
+  bold: { fontWeight: "bold", color: "#4A2A00" },
+
+  // Styles Page
   kontenArea: {
     flex: 1,
     justifyContent: "flex-end",
@@ -189,7 +191,16 @@ const styles = StyleSheet.create({
     height: 300,
     resizeMode: "contain",
   },
-  // --- Modal Styles ---
+  dekorasiOverlay: {
+    position: "absolute",
+    top: 100,
+    right: 20,
+    width: 100,
+    height: 100,
+    zIndex: 0,
+  },
+
+  // Styles Modal
   modalBackdrop: {
     flex: 1,
     justifyContent: "center",
@@ -198,7 +209,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: "90%",
     maxWidth: 340,
-    maxHeight: "80%",
+    maxHeight: "60%",
     backgroundColor: "#FFB347",
     borderRadius: 20,
     borderWidth: 5,
@@ -211,44 +222,46 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#4A2A00",
     marginBottom: 20,
-    alignSelf: "center",
   },
-  dekorasiGrid: {
+  lemariGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "flex-start",
+    justifyContent: "center",
     width: "100%",
   },
-  itemDekorasi: {
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    padding: 15,
-    borderRadius: 10,
+  itemDekor: {
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    padding: 10,
+    borderRadius: 15,
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#4A2A00",
-    width: "45%",
-    margin: "2.5%",
+    borderWidth: 3,
+    borderColor: "#E67E22",
+    width: "40%",
+    margin: "3%",
+    aspectRatio: 1,
+    justifyContent: "center",
   },
   itemSelected: {
-    backgroundColor: "#d4edda",
-    borderColor: "#28a745",
-    borderWidth: 3,
+    backgroundColor: "#D4EDDA",
+    borderColor: "#27AE60",
+    transform: [{ scale: 1.05 }],
   },
-  itemDekorasiText: {
-    marginTop: 5,
+  itemDekorText: {
+    marginTop: 8,
     color: "#4A2A00",
     fontWeight: "bold",
-    textTransform: "capitalize",
+    fontSize: 14,
+    textAlign: "center",
   },
   modalButton: {
     flexDirection: "row",
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 25,
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 4,
-    marginTop: 20,
+    marginTop: 15,
   },
   modalButtonText: {
     color: "white",

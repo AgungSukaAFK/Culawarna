@@ -91,6 +91,7 @@ export interface GameState {
   lastQuizTimestamp: number;
   isLoading: boolean;
   volume: number;
+  sfxVolume: number;
   isMinigameActive: boolean;
 
   // --- TAMBAHAN UNTUK TOKO & INVENTORY ---
@@ -110,6 +111,7 @@ export type GameAction =
   | { type: "TAMBAH_KOIN"; payload: number }
   | { type: "KURANGI_KOIN"; payload: number }
   | { type: "SET_VOLUME"; payload: number }
+  | { type: "SET_SFX_VOLUME"; payload: number }
   | { type: "SET_APPEARANCE"; payload: AppearanceMode }
   | {
       type: "GANTI_OUTFIT";
@@ -151,6 +153,9 @@ export interface ModalPengaturanProps {
   // Props Baru untuk Tampilan
   selectedAppearance: AppearanceMode;
   setAppearance: (mode: AppearanceMode) => void;
+
+  sfxVolume: number; // <-- Props Baru
+  setSfxVolume: (vol: number) => void; // <-- Props Baru
 
   // Debug props (biarkan jika masih ada)
   onGunakanEnergi?: () => void;

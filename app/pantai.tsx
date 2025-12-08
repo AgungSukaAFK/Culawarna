@@ -1,83 +1,77 @@
 // Di dalam file: app/pantai.tsx
 
+import { useSFX } from "@/app/_layout"; // <-- Import useSFX
 import { CulaCharacter } from "@/app/components/CulaCharacter";
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { HelpContent } from "@/app/types/gameTypes";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // --- SCREEN PANTAI ---
 export default function PantaiScreen() {
   const router = useRouter();
+  const { playSfx } = useSFX(); 
+  
+  const isWeb = Platform.OS === "web";
 
-  // --- KONTEN BANTUAN (Dipindah ke dalam komponen) ---
+  // --- KONTEN BANTUAN (Dipindahkan ke dalam komponen) ---
   const pantaiHelpContent: HelpContent = {
     title: "Pantai & Minigames 🏖️",
     body: (
       <View>
         <Text style={styles.helpText}>
-          Butuh Koin? Datanglah ke Pantai! Di sini tersedia berbagai minigame
-          seru untuk mengumpulkan koin.
+          Butuh Koin? Datanglah ke Pantai! Di sini ada 2 permainan seru:
         </Text>
-
-        <Text style={[styles.helpText, { marginTop: 10 }]}>
-          <Text style={styles.bold}>Daftar Minigame:</Text>
-        </Text>
-
         <View style={styles.bulletPoint}>
-          <Ionicons
-            name="basket"
-            size={16}
-            color="#4A2A00"
-            style={{ marginTop: 2 }}
-          />
+          <Ionicons name="basket" size={20} color="#4A2A00" />
           <Text style={styles.bulletText}>
-            <Text style={styles.bold}>Food Drop:</Text> Tangkap makanan yang
-            jatuh dan hindari bom! Semakin banyak makanan ditangkap, semakin
-            banyak koin didapat.
+            <Text style={styles.bold}>Food Drop:</Text> Tangkap makanan yang jatuh, hindari bom!
           </Text>
         </View>
-
         <View style={styles.bulletPoint}>
-          <Ionicons
-            name="grid"
-            size={16}
-            color="#4A2A00"
-            style={{ marginTop: 2 }}
-          />
+          <Ionicons name="grid" size={20} color="#4A2A00" />
           <Text style={styles.bulletText}>
-            <Text style={styles.bold}>Memory Food:</Text> Latih ingatanmu!
-            Temukan pasangan kartu makanan yang sama sebelum waktu habis.
+            <Text style={styles.bold}>Memory Food:</Text> Ingat dan cocokkan gambar makanan.
           </Text>
         </View>
-
-        <Text style={[styles.helpText, { marginTop: 10, fontStyle: "italic" }]}>
-          Koin yang didapat bisa digunakan untuk membeli baju, topi, atau
-          dekorasi di Toko Budaya.
-        </Text>
       </View>
     ),
   };
 
+  const handleOpenMinigame = (path: string) => {
+    playSfx("tap"); // <-- SFX saat pilih game
+    router.push(path as any);
+  };
+
   return (
     <GameHUDLayout
-      // Gunakan video background (pastikan file ada)
-      backgroundVideo={require("@/assets/bgvideo/pantai.mp4")}
-      // Masukkan konten help yang sudah didefinisikan di atas
+      // Logic Background: Gambar di Web, Video di Native
+      backgroundImage={isWeb ? require("@/assets/images/homescreen_bg.png") : undefined}
+      backgroundVideo={!isWeb ? require("@/assets/bgvideo/pantai.mp4") : undefined}
+      
       helpContent={pantaiHelpContent}
+      
       onPressNavLeft={() => router.replace("/")}
       onPressNavRight={() => router.replace("/")}
+      
       middleNavButton={{
-        onPress: () => Alert.alert("Info", "Pilih Minigame di layar!"),
+        onPress: () => {}, // Kosong karena menu ada di layar
         icon: <Ionicons name="game-controller" size={24} color="white" />,
         text: "Main",
       }}
       pageModal={null}
     >
       <View style={styles.container}>
-        {/* Karakter di Pasir */}
+        
+        {/* Karakter */}
         <View style={styles.characterContainer}>
           <CulaCharacter style={styles.character} />
         </View>
@@ -85,38 +79,36 @@ export default function PantaiScreen() {
         {/* Menu Minigame */}
         <View style={styles.minigameMenu}>
           <Text style={styles.menuTitle}>Pilih Permainan</Text>
-
-          <TouchableOpacity
-            style={styles.gameButton}
-            onPress={() => router.push("/minigame/food-drop")}
+          
+          <TouchableOpacity 
+            style={styles.gameButton} 
+            onPress={() => handleOpenMinigame("/minigame/food-drop")}
           >
             <View style={styles.iconBox}>
               <Ionicons name="basket" size={40} color="#FFF" />
             </View>
             <View style={styles.gameInfo}>
               <Text style={styles.gameTitle}>Food Drop</Text>
-              <Text style={styles.gameDesc}>Tangkap makanan, hindari bom!</Text>
+              <Text style={styles.gameDesc}>Tangkap makanan jatuh!</Text>
             </View>
             <Ionicons name="play-circle" size={32} color="#FFF" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.gameButton,
-              { backgroundColor: "#2ECC71", borderColor: "#27AE60" },
-            ]}
-            onPress={() => router.push("/minigame/memory-food")}
+          <TouchableOpacity 
+            style={[styles.gameButton, { backgroundColor: "#2ECC71", borderColor: "#27AE60" }]} 
+            onPress={() => handleOpenMinigame("/minigame/memory-food")}
           >
             <View style={[styles.iconBox, { backgroundColor: "#27AE60" }]}>
               <Ionicons name="grid" size={40} color="#FFF" />
             </View>
             <View style={styles.gameInfo}>
               <Text style={styles.gameTitle}>Memory Food</Text>
-              <Text style={styles.gameDesc}>Cocokkan kartu makanan.</Text>
+              <Text style={styles.gameDesc}>Uji daya ingatmu!</Text>
             </View>
             <Ionicons name="play-circle" size={32} color="#FFF" />
           </TouchableOpacity>
         </View>
+
       </View>
     </GameHUDLayout>
   );
@@ -130,8 +122,8 @@ const styles = StyleSheet.create({
   },
   characterContainer: {
     position: "absolute",
-    bottom: 100, // Di atas navbar
-    right: -20, // Agak ke kanan
+    bottom: 100,
+    right: -20,
     zIndex: 1,
   },
   character: {
@@ -149,7 +141,7 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: "#4A2A00",
     elevation: 5,
-    marginTop: -50, // Angkat sedikit ke atas
+    marginTop: -50, // Geser ke atas dikit biar gak ketutup nav
   },
   menuTitle: {
     fontSize: 24,
@@ -191,7 +183,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#E0E0E0",
   },
-  // --- Styles Help Text ---
   helpText: {
     fontSize: 16,
     color: "#333",

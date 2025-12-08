@@ -17,48 +17,39 @@ import {
   View,
 } from "react-native";
 
-// Impor Tipe, Layout, dan Komponen Karakter Baru
+import { useSFX } from "@/app/_layout"; // Import Hook Audio
 import { CulaCharacter } from "@/app/components/CulaCharacter";
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
-import { HelpContent, ModalLemariProps, Outfit } from "@/app/types/gameTypes";
+import { HelpContent, ModalLemariProps } from "@/app/types/gameTypes";
 
-// --- KONTEN BANTUAN (Updated) ---
-const kamarHelpContent: HelpContent = {
-  title: "Panduan Kamar 🛏️",
-  body: `Di sini tempat kamu mendandani Si Cula!
-
-• Tekan tombol "Lemari" untuk melihat koleksi pakaian.
-• Pilih baju adat yang ingin dipakai.
-• Tekan "Lepas" untuk kembali ke tampilan dasar.
-
-Cobalah untuk koleksi baju adat yang tersedia di toko budaya!`,
-};
-
-// --- KOMPONEN MODAL SPESIFIK KAMAR ---
+// --- MODAL LEMARI ---
 const ModalLemari: React.FC<ModalLemariProps> = ({ visible, onClose }) => {
   const { state, dispatch } = useGameContext();
+  const { playSfx, playBtnSound } = useSFX(); 
 
-  const handleGanti = (itemType: keyof Outfit, itemId: string | null) => {
-    // Logika sederhana: Langsung ganti baju
+  const handleGantiBaju = (itemId: string | null) => {
+    playSfx("tap"); 
+
+    // Reset Topi (karena fitur topi dihapus)
     dispatch({
       type: "GANTI_OUTFIT",
-      payload: { itemType, itemId },
+      payload: { itemType: "topiId", itemId: null },
+    });
+    
+    // Ganti Baju
+    dispatch({
+      type: "GANTI_OUTFIT",
+      payload: { itemType: "bajuId", itemId },
     });
   };
 
-  // Helper untuk menampilkan nama yang lebih cantik
-  const formatNamaBaju = (id: string) => {
-    switch (id) {
-      case "baju-baduy":
-        return "Baduy";
-      case "baju-batik":
-        return "Batik";
-      case "baju-minang":
-        return "Minang";
-      default:
-        return id;
-    }
+  // Helper Nama Cantik
+  const getLabel = (id: string) => {
+    if (id === "baju-baduy") return "Baduy";
+    if (id === "baju-batik") return "Batik";
+    if (id === "baju-minang") return "Minang";
+    return id;
   };
 
   return (
@@ -70,57 +61,52 @@ const ModalLemari: React.FC<ModalLemariProps> = ({ visible, onClose }) => {
     >
       <BlurView intensity={10} tint="dark" style={styles.modalBackdrop}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Lemari Baju</Text>
+          <Text style={styles.modalTitle}>Koleksi Pakaian</Text>
           <ScrollView style={{ width: "100%" }}>
-            {/* --- Hanya Kategori Baju --- */}
-            <Text style={styles.categoryTitle}>Pakaian Adat</Text>
+            
             <View style={styles.lemariGrid}>
-              {/* Tombol Lepas Baju */}
+              
+              {/* Opsi: Lepas */}
               <TouchableOpacity
                 style={[
                   styles.itemBaju,
-                  (state.currentOutfit.bajuId === null ||
-                    state.currentOutfit.bajuId === "baju-dasar") &&
-                    styles.itemSelected,
+                  state.currentOutfit.bajuId === null && styles.itemSelected,
                 ]}
-                onPress={() => handleGanti("bajuId", null)}
+                onPress={() => handleGantiBaju(null)}
               >
-                <Ionicons name="close-circle" size={40} color="#4A2A00" />
+                <Ionicons name="body-outline" size={35} color="#4A2A00" />
                 <Text style={styles.itemBajuText}>Lepas</Text>
               </TouchableOpacity>
 
-              {/* List Baju yang Dimiliki */}
+              {/* Opsi: List Baju Milik Player */}
               {state.ownedBaju
-                .filter((id) => id !== "baju-dasar")
+                .filter((id) => id !== "baju-dasar") 
                 .map((itemId) => (
                   <TouchableOpacity
                     key={itemId}
                     style={[
                       styles.itemBaju,
-                      state.currentOutfit.bajuId === itemId &&
-                        styles.itemSelected,
+                      state.currentOutfit.bajuId === itemId && styles.itemSelected,
                     ]}
-                    onPress={() => handleGanti("bajuId", itemId)}
+                    onPress={() => handleGantiBaju(itemId)}
                   >
-                    <FontAwesome5 name="tshirt" size={40} color="#4A2A00" />
-                    <Text style={styles.itemBajuText}>
-                      {formatNamaBaju(itemId)}
-                    </Text>
+                    <FontAwesome5 name="tshirt" size={35} color="#4A2A00" />
+                    <Text style={styles.itemBajuText}>{getLabel(itemId)}</Text>
                   </TouchableOpacity>
                 ))}
             </View>
+
           </ScrollView>
 
           <TouchableOpacity
-            style={[
-              styles.modalButton,
-              styles.kembaliButton,
-              { alignSelf: "center", marginTop: 20 },
-            ]}
-            onPress={onClose}
+            style={[styles.modalButton, styles.kembaliButton]}
+            onPress={() => {
+              playBtnSound(); 
+              onClose();
+            }}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
-            <Text style={styles.modalButtonText}>Kembali</Text>
+            <Text style={styles.modalButtonText}>Tutup</Text>
           </TouchableOpacity>
         </View>
       </BlurView>
@@ -128,11 +114,33 @@ const ModalLemari: React.FC<ModalLemariProps> = ({ visible, onClose }) => {
   );
 };
 
-// --- LAYAR KAMAR ---
+// --- SCREEN KAMAR ---
 export default function KamarScreen() {
   const router = useRouter();
   const { state } = useGameContext();
   const [isLemariVisible, setLemariVisible] = useState<boolean>(false);
+
+  // --- KONTEN BANTUAN (Dipindah ke dalam komponen agar styles terbaca) ---
+  const kamarHelpContent: HelpContent = {
+    title: "Lemari Baju 👕",
+    body: (
+      <View>
+        <Text style={styles.helpText}>
+          Pilih pakaian adat untuk Si Cula!
+        </Text>
+        <Text style={styles.helpText}>
+          • <Text style={styles.bold}>Baju Baduy:</Text> Pakaian hitam-hitam khas masyarakat Kanekes.
+          {"\n"}• <Text style={styles.bold}>Batik Banten:</Text> Kemeja dengan motif khas Banten.
+          {"\n"}• <Text style={styles.bold}>Baju Minang:</Text> Pakaian adat Sumatera Barat.
+        </Text>
+      </View>
+    ),
+  };
+
+  // Helper label untuk debug info di layar
+  const currentBajuLabel = state.currentOutfit.bajuId 
+    ? state.currentOutfit.bajuId.replace("baju-", "").toUpperCase() 
+    : "DASAR";
 
   return (
     <GameHUDLayout
@@ -141,9 +149,9 @@ export default function KamarScreen() {
       onPressNavRight={() => router.replace("/ruangTamu")}
       helpContent={kamarHelpContent}
       middleNavButton={{
-        onPress: () => setLemariVisible(true),
+        onPress: () => setLemariVisible(true), // Suara handled by Layout
         icon: (
-          <MaterialCommunityIcons name="tshirt-crew" size={24} color="white" />
+          <MaterialCommunityIcons name="wardrobe" size={24} color="white" />
         ),
         text: "Lemari",
       }}
@@ -154,14 +162,10 @@ export default function KamarScreen() {
         />
       }
     >
-      {/* Konten Halaman Ini */}
       <View style={styles.kontenArea}>
-        {/* Debug Info Sederhana */}
-        <View style={styles.debugInfo}>
-          <Text style={styles.textPlaceholder}>
-            Outfit:{" "}
-            {state.currentOutfit.bajuId ? state.currentOutfit.bajuId : "Dasar"}
-          </Text>
+        {/* Debug Info Kecil */}
+        <View style={styles.outfitBadge}>
+          <Text style={styles.outfitText}>Outfit: {currentBajuLabel}</Text>
         </View>
 
         <CulaCharacter style={styles.karakterKamar} />
@@ -170,8 +174,12 @@ export default function KamarScreen() {
   );
 }
 
-// --- STYLESHEET ---
 const styles = StyleSheet.create({
+  // Styles Help
+  helpText: { fontSize: 16, color: "#333", lineHeight: 24, marginBottom: 5 },
+  bold: { fontWeight: "bold", color: "#4A2A00" },
+  
+  // Styles Page
   kontenArea: {
     flex: 1,
     justifyContent: "flex-end",
@@ -183,20 +191,21 @@ const styles = StyleSheet.create({
     height: 320,
     resizeMode: "contain",
   },
-  debugInfo: {
+  outfitBadge: {
     position: "absolute",
     top: 100,
-    alignItems: "center",
-    zIndex: 1,
+    backgroundColor: "rgba(255,255,255,0.6)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
-  textPlaceholder: {
+  outfitText: {
     fontSize: 12,
-    color: "black",
-    backgroundColor: "rgba(255,255,255,0.7)",
-    padding: 4,
-    borderRadius: 5,
-    marginBottom: 2,
+    fontWeight: "bold",
+    color: "#4A2A00",
   },
+  
+  // Styles Modal
   modalBackdrop: {
     flex: 1,
     justifyContent: "center",
@@ -205,7 +214,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: "90%",
     maxWidth: 340,
-    maxHeight: "80%",
+    maxHeight: "60%",
     backgroundColor: "#FFB347",
     borderRadius: 20,
     borderWidth: 5,
@@ -218,16 +227,46 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#4A2A00",
     marginBottom: 20,
-    alignSelf: "center",
+  },
+  lemariGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    width: "100%",
+  },
+  itemBaju: {
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    padding: 10,
+    borderRadius: 15,
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#E67E22",
+    width: "40%",
+    margin: "3%",
+    aspectRatio: 1,
+    justifyContent: "center",
+  },
+  itemSelected: {
+    backgroundColor: "#D4EDDA",
+    borderColor: "#27AE60",
+    transform: [{ scale: 1.05 }],
+  },
+  itemBajuText: {
+    marginTop: 8,
+    color: "#4A2A00",
+    fontWeight: "bold",
+    fontSize: 14,
+    textAlign: "center",
   },
   modalButton: {
     flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 25,
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 4,
+    marginTop: 15,
   },
   modalButtonText: {
     color: "white",
@@ -238,44 +277,5 @@ const styles = StyleSheet.create({
   kembaliButton: {
     backgroundColor: "#8A2BE2",
     borderColor: "#4B0082",
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#4A2A00",
-    alignSelf: "flex-start",
-    marginTop: 15,
-    marginBottom: 5,
-    borderBottomWidth: 2,
-    borderBottomColor: "rgba(74, 42, 0, 0.2)",
-    width: "100%",
-  },
-  lemariGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
-    width: "100%",
-  },
-  itemBaju: {
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    padding: 10,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#4A2A00",
-    width: "30%", // 3 Kolom
-    margin: "1.5%",
-  },
-  itemSelected: {
-    backgroundColor: "#d4edda",
-    borderColor: "#28a745",
-    borderWidth: 3,
-  },
-  itemBajuText: {
-    marginTop: 5,
-    color: "#4A2A00",
-    fontWeight: "bold",
-    fontSize: 11,
-    textAlign: "center",
   },
 });

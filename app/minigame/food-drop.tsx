@@ -1,10 +1,10 @@
 // Di dalam file: app/minigame/food-drop.tsx
 
+import { useSFX } from "@/app/_layout"; // <-- Import useSFX
 import { CulaCharacter } from "@/app/components/CulaCharacter";
-import { CustomGameAlert } from "@/app/components/CustomGameAlert"; // <-- Import Custom Alert
+import { CustomGameAlert } from "@/app/components/CustomGameAlert";
 import { useGameContext } from "@/app/context/GameContext";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
 import { router } from "expo-router";
 import React, { memo, useEffect, useRef, useState } from "react";
 import {
@@ -166,6 +166,8 @@ const FallingObjectComponent: React.FC<{
 // --- LAYAR GAME UTAMA ---
 export default function FoodDropScreen() {
   const { state, dispatch } = useGameContext();
+  const { playSfx } = useSFX(); // <-- Panggil useSFX
+
   const [objects, setObjects] = useState<FallingObjectData[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME_SECONDS);
@@ -173,7 +175,6 @@ export default function FoodDropScreen() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [countdown, setCountdown] = useState<string | number>(3);
 
-  // --- STATE ALERT CUSTOM ---
   const [alertConfig, setAlertConfig] = useState({
     visible: false,
     title: "",
@@ -187,30 +188,14 @@ export default function FoodDropScreen() {
   const isGameActiveSV = useSharedValue(false);
   const objectIdCounter = useRef(0);
 
-  const sfxCatchRef = useRef<Audio.Sound | null>(null);
-  const sfxBombRef = useRef<Audio.Sound | null>(null);
+  // --- HAPUS REF AUDIO MANUAL ---
+  // const sfxCatchRef = useRef<Audio.Sound | null>(null);
+  // const sfxBombRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: true });
 
-    const loadSounds = async () => {
-      try {
-        const { sound: catchSound } = await Audio.Sound.createAsync(
-          require("@/assets/audio/kuis.mp3"),
-          { volume: state.volume }
-        );
-        sfxCatchRef.current = catchSound;
-
-        const { sound: bombSound } = await Audio.Sound.createAsync(
-          require("@/assets/audio/home.mp3"),
-          { volume: state.volume }
-        );
-        sfxBombRef.current = bombSound;
-      } catch (error) {
-        console.warn("Gagal memuat SFX:", error);
-      }
-    };
-    loadSounds();
+    // Hapus logic loadSounds manual karena sudah di-handle Global Audio Manager
 
     const countdownTimer = setInterval(() => {
       setCountdown((prev) => {
@@ -226,15 +211,11 @@ export default function FoodDropScreen() {
     return () => {
       clearInterval(countdownTimer);
       dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
-      sfxCatchRef.current?.unloadAsync();
-      sfxBombRef.current?.unloadAsync();
+      // Hapus logic unload manual
     };
   }, []);
 
-  useEffect(() => {
-    sfxCatchRef.current?.setVolumeAsync(state.volume);
-    sfxBombRef.current?.setVolumeAsync(state.volume);
-  }, [state.volume]);
+  // Hapus logic setVolume manual
 
   useEffect(() => {
     if (!isGameActive || isGameOver) return;
@@ -287,16 +268,9 @@ export default function FoodDropScreen() {
     };
   });
 
-  const playCatchSound = () => {
-    sfxCatchRef.current?.replayAsync();
-  };
-
-  const playBombSound = () => {
-    sfxBombRef.current?.replayAsync();
-  };
-
+  // --- LOGIKA SUARA BARU ---
   const handleCatchFood = (id: number) => {
-    playCatchSound();
+    playSfx("eat"); // <-- Ganti sfxCatchRef.current.replayAsync()
     setObjects((prev) => prev.filter((obj) => obj.id !== id));
     setScore((prev) => prev + 1);
   };
@@ -305,42 +279,39 @@ export default function FoodDropScreen() {
     setObjects((prev) => prev.filter((obj) => obj.id !== id));
   };
 
-  // --- HANDLE GAME OVER (Updated Alert) ---
   const handleGameOver = () => {
     if (isGameOver) return;
-    playBombSound();
+    playSfx("bomb"); // <-- Ganti sfxBombRef.current.replayAsync()
     setIsGameOver(true);
     setIsGameActive(false);
     isGameActiveSV.value = false;
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
-
-    // Ganti Alert.alert
+    
     setAlertConfig({
       visible: true,
       title: "BOOM! 💥",
       message: "Kamu terkena bom! Hati-hati ya.",
-      icon: "flame", // Icon api
+      icon: "flame", 
       buttonText: "Kembali",
       onClose: () => router.back(),
     });
   };
 
-  // --- HANDLE GAME WIN (Updated Alert) ---
   const handleGameWin = () => {
     if (isGameOver) return;
+    playSfx("quiz_done"); // <-- Tambahan SFX saat menang
     setIsGameOver(true);
     setIsGameActive(false);
     isGameActiveSV.value = false;
     const koinWon = score * KOIN_PER_FOOD;
     dispatch({ type: "TAMBAH_KOIN", payload: koinWon });
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
-
-    // Ganti Alert.alert
+    
     setAlertConfig({
       visible: true,
       title: "Waktu Habis! ⏰",
       message: `Kamu menangkap ${score} makanan!\n(+${koinWon} Koin)`,
-      icon: "trophy", // Icon piala
+      icon: "trophy", 
       buttonText: "Mantap",
       onClose: () => router.back(),
     });
@@ -353,8 +324,8 @@ export default function FoodDropScreen() {
         style={styles.container}
       >
         <SafeAreaView style={styles.safeArea}>
-          {/* --- Render Custom Alert --- */}
-          <CustomGameAlert
+          
+          <CustomGameAlert 
             visible={alertConfig.visible}
             title={alertConfig.title}
             message={alertConfig.message}

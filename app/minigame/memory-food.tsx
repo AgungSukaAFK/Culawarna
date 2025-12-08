@@ -1,6 +1,7 @@
 // Di dalam file: app/minigame/memory-food.tsx
 
-import { CustomGameAlert } from "@/app/components/CustomGameAlert"; // <-- Import Custom Alert
+import { useSFX } from "@/app/_layout"; // <-- 1. Import useSFX
+import { CustomGameAlert } from "@/app/components/CustomGameAlert";
 import { useGameContext } from "@/app/context/GameContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -16,7 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// --- 1. MAPPING ASET MAKANAN KHAS BANTEN ---
+// --- MAPPING ASET MAKANAN KHAS BANTEN ---
 const foodAssets: { [key: string]: ImageSourcePropType } = {
   pecakbandeng: require("@/assets/images/foods/pecakbandeng.png"),
   rabeg: require("@/assets/images/foods/rabeg.png"),
@@ -26,7 +27,6 @@ const foodAssets: { [key: string]: ImageSourcePropType } = {
   bugis: require("@/assets/images/foods/bugis.png"),
 };
 
-// --- TIPE DATA ---
 interface Card {
   id: number;
   foodId: string;
@@ -35,7 +35,6 @@ interface Card {
   isMatched: boolean;
 }
 
-// --- KONFIGURASI LEVEL ---
 const GAME_ITEMS = [
   { foodId: "pecakbandeng", image: foodAssets.pecakbandeng },
   { foodId: "rabeg", image: foodAssets.rabeg },
@@ -48,7 +47,6 @@ const GAME_ITEMS = [
 const KOIN_REWARD = 15;
 const GAME_TIME_SECONDS = 45;
 
-// Fungsi Acak (Fisher-Yates Shuffle)
 const shuffleArray = (array: any[]) => {
   let currentIndex = array.length,
     randomIndex;
@@ -63,7 +61,6 @@ const shuffleArray = (array: any[]) => {
   return array;
 };
 
-// Membuat Papan Permainan
 const createGameBoard = (): Card[] => {
   const pairedFoods = [...GAME_ITEMS, ...GAME_ITEMS];
   const shuffled = shuffleArray(pairedFoods);
@@ -79,6 +76,7 @@ const createGameBoard = (): Card[] => {
 
 export default function MemoryFoodScreen() {
   const { dispatch } = useGameContext();
+  const { playSfx } = useSFX(); // <-- 2. Panggil hook useSFX
 
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
@@ -88,7 +86,6 @@ export default function MemoryFoodScreen() {
   const [isChecking, setIsChecking] = useState(false);
   const [countdown, setCountdown] = useState<string | number>(3);
 
-  // --- STATE ALERT CUSTOM ---
   const [alertConfig, setAlertConfig] = useState({
     visible: false,
     title: "",
@@ -98,7 +95,6 @@ export default function MemoryFoodScreen() {
     onClose: () => {},
   });
 
-  // --- SETUP AWAL & COUNTDOWN ---
   useEffect(() => {
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: true });
 
@@ -118,15 +114,13 @@ export default function MemoryFoodScreen() {
     };
   }, []);
 
-  // --- TIMER ---
   useEffect(() => {
     if (!isGameActive) return;
-
-    // Jika waktu habis
+    
     if (timeLeft <= 0) {
       setIsGameActive(false);
-
-      // Ganti Alert.alert
+      playSfx("quiz_wrong"); // SFX Waktu Habis (Opsional, pakai quiz_wrong)
+      
       setAlertConfig({
         visible: true,
         title: "Waktu Habis! ⏰",
@@ -142,7 +136,7 @@ export default function MemoryFoodScreen() {
     return () => clearInterval(timer);
   }, [isGameActive, timeLeft]);
 
-  // --- LOGIKA PENCOCOKAN ---
+  // --- LOGIKA PENCOCOKAN DENGAN SFX ---
   useEffect(() => {
     if (flippedCards.length === 2) {
       setIsChecking(true);
@@ -152,6 +146,8 @@ export default function MemoryFoodScreen() {
 
       if (card1.foodId === card2.foodId) {
         // MATCH
+        playSfx("quiz_correct"); // <-- 3. SFX Jika Cocok
+        
         setCards((prev) =>
           prev.map((c) =>
             c.id === card1.id || c.id === card2.id
@@ -163,7 +159,9 @@ export default function MemoryFoodScreen() {
         setFlippedCards([]);
         setIsChecking(false);
       } else {
-        // TIDAK MATCH
+        // MISMATCH
+        playSfx("tap2"); // <-- 4. SFX Jika Salah (tap2)
+
         setTimeout(() => {
           setCards((prev) =>
             prev.map((c) =>
@@ -179,13 +177,12 @@ export default function MemoryFoodScreen() {
     }
   }, [flippedCards, cards]);
 
-  // --- CEK KEMENANGAN ---
   useEffect(() => {
     if (isGameActive && score === GAME_ITEMS.length) {
       setIsGameActive(false);
       dispatch({ type: "TAMBAH_KOIN", payload: KOIN_REWARD });
-
-      // Ganti Alert.alert
+      playSfx("quiz_done"); // SFX Menang
+      
       setAlertConfig({
         visible: true,
         title: "Luar Biasa! 🏆",
@@ -216,6 +213,8 @@ export default function MemoryFoodScreen() {
       return;
     }
 
+    playSfx("tap"); // <-- 5. SFX Saat Tap Kartu
+
     setCards((prev) =>
       prev.map((c, i) => (i === index ? { ...c, isFlipped: true } : c))
     );
@@ -223,9 +222,8 @@ export default function MemoryFoodScreen() {
   };
 
   const handleExitGame = () => {
-    // Pastikan alert tertutup sebelum navigasi
-    setAlertConfig((prev) => ({ ...prev, visible: false }));
-
+    playSfx("tap");
+    setAlertConfig(prev => ({ ...prev, visible: false }));
     dispatch({ type: "SET_MINIGAME_ACTIVE", payload: false });
     router.back();
   };
@@ -236,8 +234,8 @@ export default function MemoryFoodScreen() {
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
-        {/* --- CUSTOM ALERT --- */}
-        <CustomGameAlert
+        
+        <CustomGameAlert 
           visible={alertConfig.visible}
           title={alertConfig.title}
           message={alertConfig.message}
@@ -372,7 +370,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    maxWidth: 340, // Membatasi lebar agar grid 4 kolom (75px * 4 + margin)
+    maxWidth: 340,
   },
   card: {
     width: 70,
@@ -390,15 +388,15 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   cardFaceDown: {
-    backgroundColor: "#6A5ACD", // Ungu slate
+    backgroundColor: "#6A5ACD",
     borderColor: "#483D8B",
   },
   cardFaceUp: {
-    backgroundColor: "#FFF8DC", // Putih gading
+    backgroundColor: "#FFF8DC",
     borderColor: "#FF8C00",
   },
   cardMatched: {
-    backgroundColor: "#90EE90", // Hijau muda
+    backgroundColor: "#90EE90",
     borderColor: "#2E8B57",
     opacity: 0.8,
   },

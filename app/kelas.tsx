@@ -1,5 +1,6 @@
 // Di dalam file: app/kelas.tsx
 
+import { useSFX } from "@/app/_layout"; // <-- Import useSFX
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
 import { HelpContent } from "@/app/types/gameTypes";
@@ -38,6 +39,8 @@ const ModalMateri: React.FC<ModalMateriProps> = ({
   onSelectMateri,
 }) => {
   const { state } = useGameContext();
+  const { playSfx, playBtnSound } = useSFX(); // SFX Hook
+
   const materi = [
     { id: "bab1", title: "BAB 1: Kelompok Sosial" },
     { id: "bab2", title: "BAB 2: Permasalahan Sosial" },
@@ -71,7 +74,10 @@ const ModalMateri: React.FC<ModalMateriProps> = ({
                     isLocked && styles.disabledButton,
                   ]}
                   disabled={isLocked}
-                  onPress={() => onSelectMateri(m.id)}
+                  onPress={() => {
+                    playSfx("tap");
+                    onSelectMateri(m.id);
+                  }}
                 >
                   <Ionicons
                     name={isLocked ? "lock-closed" : "book"}
@@ -85,7 +91,10 @@ const ModalMateri: React.FC<ModalMateriProps> = ({
           </ScrollView>
           <TouchableOpacity
             style={[styles.modalButton, styles.kembaliButton]}
-            onPress={onClose}
+            onPress={() => {
+              playBtnSound();
+              onClose();
+            }}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
             <Text style={styles.modalButtonText}>Kembali</Text>
@@ -103,6 +112,8 @@ const ModalKuis: React.FC<ModalKuisProps> = ({
   onSelectKuis,
 }) => {
   const { state } = useGameContext();
+  const { playSfx, playBtnSound } = useSFX(); // SFX Hook
+
   const kuis = [
     { id: "bab1", title: "Kuis BAB 1" },
     { id: "bab2", title: "Kuis BAB 2" },
@@ -138,7 +149,10 @@ const ModalKuis: React.FC<ModalKuisProps> = ({
                     isCompleted && styles.completedButton,
                   ]}
                   disabled={isLocked}
-                  onPress={() => onSelectKuis(k.id)}
+                  onPress={() => {
+                    playSfx("tap");
+                    onSelectKuis(k.id);
+                  }}
                 >
                   <Ionicons
                     name={
@@ -158,7 +172,10 @@ const ModalKuis: React.FC<ModalKuisProps> = ({
           </ScrollView>
           <TouchableOpacity
             style={[styles.modalButton, styles.kembaliButton]}
-            onPress={onClose}
+            onPress={() => {
+              playBtnSound();
+              onClose();
+            }}
           >
             <Ionicons name="arrow-back" size={16} color="white" />
             <Text style={styles.modalButtonText}>Kembali</Text>
@@ -173,11 +190,12 @@ const ModalKuis: React.FC<ModalKuisProps> = ({
 export default function KelasBudayaScreen() {
   const router = useRouter();
   const { state } = useGameContext();
+  const { playSfx, playBtnSound } = useSFX(); // Hook SFX
 
   const [isMateriVisible, setMateriVisible] = useState(false);
   const [isKuisVisible, setKuisVisible] = useState(false);
 
-  // --- KONTEN BANTUAN (Dipindahkan ke sini agar aman) ---
+  // --- KONTEN BANTUAN ---
   const kelasHelpContent: HelpContent = {
     title: "Kelas Budaya 🏫",
     body: (
@@ -191,9 +209,8 @@ export default function KelasBudayaScreen() {
         </Text>
         <Text style={styles.helpText}>
           • <Text style={styles.bold}>Materi Belajar:</Text> Baca rangkuman
-          materi per bab (Kelompok Sosial, Permasalahan Sosial, dll).{"\n"}•{" "}
-          <Text style={styles.bold}>Mulai Kuis:</Text> Kerjakan soal latihan
-          untuk mendapatkan XP dan naik level.
+          materi per bab.{"\n"}• <Text style={styles.bold}>Mulai Kuis:</Text>{" "}
+          Kerjakan soal latihan untuk mendapatkan XP.
         </Text>
 
         <Text style={[styles.helpText, { marginTop: 10 }]}>
@@ -201,10 +218,7 @@ export default function KelasBudayaScreen() {
         </Text>
         <Text style={styles.helpText}>
           • Mengerjakan kuis membutuhkan <Text style={styles.bold}>Energi</Text>
-          .{"\n"}• Bab baru akan terbuka otomatis saat Si Cula berevolusi (Anak,
-          Remaja, Dewasa).{"\n"}• Cek tombol{" "}
-          <Text style={styles.bold}>Riwayat</Text> untuk melihat nilai kuis kamu
-          sebelumnya.
+          .{"\n"}• Bab baru akan terbuka otomatis saat Si Cula berevolusi.
         </Text>
       </View>
     ),
@@ -221,12 +235,14 @@ export default function KelasBudayaScreen() {
     const KUIS_COOLDOWN_MS = 30 * 1000;
 
     if (state.energi < KUIS_ENERGY_COST) {
+      playSfx("quiz_wrong"); // SFX Gagal
       Alert.alert("Lelah", "Si Cula lelah! Isi energi dulu di Dapur.");
       return;
     }
 
     const timeSinceLastQuiz = Date.now() - state.lastQuizTimestamp;
     if (timeSinceLastQuiz < KUIS_COOLDOWN_MS) {
+      playSfx("quiz_wrong"); // SFX Gagal
       const waitSeconds = Math.ceil(
         (KUIS_COOLDOWN_MS - timeSinceLastQuiz) / 1000
       );
@@ -245,10 +261,12 @@ export default function KelasBudayaScreen() {
       backgroundImage={require("@/assets/images/kelas_bg.png")}
       onPressNavLeft={() => router.replace("/kamar")}
       onPressNavRight={() => {}}
-      helpContent={kelasHelpContent} // <-- Fitur Help
+      helpContent={kelasHelpContent}
       middleNavButton={{
-        onPress: () =>
-          Alert.alert("Info", "Kamu sedang berada di dalam Kelas."),
+        onPress: () => {
+          playBtnSound();
+          Alert.alert("Info", "Kamu sedang berada di dalam Kelas.");
+        },
         icon: <Ionicons name="school" size={24} color="white" />,
         text: "Belajar",
       }}
@@ -272,7 +290,10 @@ export default function KelasBudayaScreen() {
         {/* Tombol Materi */}
         <TouchableOpacity
           style={styles.menuUtamaButton}
-          onPress={() => setMateriVisible(true)}
+          onPress={() => {
+            playBtnSound();
+            setMateriVisible(true);
+          }}
         >
           <Ionicons name="book" size={40} color="#4A2A00" />
           <Text style={styles.menuUtamaText}>Materi Belajar</Text>
@@ -281,7 +302,10 @@ export default function KelasBudayaScreen() {
         {/* Tombol Kuis */}
         <TouchableOpacity
           style={styles.menuUtamaButton}
-          onPress={() => setKuisVisible(true)}
+          onPress={() => {
+            playBtnSound();
+            setKuisVisible(true);
+          }}
         >
           <Ionicons name="play-circle" size={40} color="#4A2A00" />
           <Text style={styles.menuUtamaText}>Mulai Kuis</Text>
@@ -290,7 +314,10 @@ export default function KelasBudayaScreen() {
         {/* Tombol Riwayat */}
         <TouchableOpacity
           style={[styles.menuUtamaButton, styles.historyButton]}
-          onPress={() => router.push("/riwayat")}
+          onPress={() => {
+            playBtnSound();
+            router.push("/riwayat");
+          }}
         >
           <MaterialCommunityIcons name="history" size={40} color="#4A2A00" />
           <Text style={styles.menuUtamaText}>Riwayat Nilai</Text>
@@ -318,10 +345,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingBottom: 80, // Beri ruang untuk HUD bawah
+    paddingBottom: 80,
   },
   menuUtamaButton: {
-    backgroundColor: "rgba(255, 179, 71, 0.9)", // Oranye
+    backgroundColor: "rgba(255, 179, 71, 0.9)",
     borderColor: "#4A2A00",
     borderWidth: 4,
     borderRadius: 20,
@@ -330,12 +357,12 @@ const styles = StyleSheet.create({
     maxWidth: 350,
     alignItems: "center",
     marginVertical: 8,
-    flexDirection: "row", // Ikon di samping teks
+    flexDirection: "row",
     justifyContent: "center",
     elevation: 5,
   },
   historyButton: {
-    backgroundColor: "#87CEEB", // Warna beda untuk riwayat (Biru Langit)
+    backgroundColor: "#87CEEB",
     borderColor: "#4682B4",
   },
   menuUtamaText: {

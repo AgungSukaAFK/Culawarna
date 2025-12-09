@@ -11,18 +11,19 @@ interface CulaCharacterProps {
 
 export const CulaCharacter: React.FC<CulaCharacterProps> = ({ style }) => {
   const { state } = useGameContext();
-  const { phase, currentOutfit, selectedAppearance } = state;
+  
+  // Ambil state yang dibutuhkan
+  const { phase, currentOutfit, selectedAppearance, energi } = state;
 
-  // LOGIKA UTAMA:
-  // Jika user memilih "Default", gunakan fase asli (state.phase).
-  // Jika user memilih spesifik (misal "Baby"), gunakan pilihan itu (selectedAppearance).
-  const displayPhase =
-    selectedAppearance === "Default" ? phase : selectedAppearance;
+  // Logika Tampilan (Appearance Mode di Settings)
+  // Jika user pilih "Default", gunakan fase asli. Jika tidak, gunakan pilihan user.
+  const displayPhase = selectedAppearance === "Default" ? phase : selectedAppearance;
 
+  // Panggil helper dengan parameter energi
   const imageSource = getCulaImage(
     displayPhase,
     currentOutfit.bajuId,
-    currentOutfit.topiId
+    energi // <-- Kirim data energi ke helper
   );
 
   return <Image source={imageSource} style={style} resizeMode="contain" />;

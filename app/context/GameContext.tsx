@@ -42,6 +42,7 @@ const phaseOrder: { [key in CulaPhase]: number } = {
 // --- STATE AWAL ---
 const initialState: GameState = {
   xp: 0,
+  level: 1,
   xpToNextLevel: XP_PER_LEVEL,
   koin: 15,
   energi: 100,
@@ -164,6 +165,65 @@ const initialState: GameState = {
 // --- REDUCER ---
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
+    case "CHEAT_SET_PHASE": {
+      const targetPhase = action.payload;
+      let newLevel = state.level;
+      let newXp = state.xp;
+
+      // Sesuaikan level minimal agar logis dengan fase barunya
+      // (Supaya kuisnya kebuka juga)
+      if (targetPhase === "Baby") { newLevel = 1; }
+      if (targetPhase === "Anak") { newLevel = Math.max(state.level, 2); }
+      if (targetPhase === "Remaja") { newLevel = Math.max(state.level, 5); }
+      if (targetPhase === "Dewasa") { newLevel = Math.max(state.level, 10); }
+
+      return {
+        ...state,
+        phase: targetPhase,
+        level: newLevel,
+        selectedAppearance: "Default", // Reset tampilan ke default fase baru
+      };
+    }
+
+    case "CHEAT_MODIFY_KOIN":
+      return { 
+        ...state, 
+        koin: Math.max(0, state.koin + action.payload) 
+      };
+
+    case "CHEAT_MODIFY_ENERGI":
+      return { 
+        ...state, 
+        energi: Math.max(0, Math.min(state.maxEnergi, state.energi + action.payload)) 
+      };
+
+    // --- LOGIKA GAME STANDAR (Tetap sama, pastikan copy semua) ---
+    case "SET_VOLUME": return { ...state, volume: action.payload };
+    case "SET_SFX_VOLUME": return { ...state, sfxVolume: action.payload };
+    case "SET_APPEARANCE": return { ...state, selectedAppearance: action.payload };
+    
+    case "TAMBAH_XP": {
+      const newXp = state.xp + action.payload;
+      let newLevel = state.level;
+      let newPhase = state.phase;
+      
+      // Logic Naik Level sederhana
+      if (newXp >= state.xpToNextLevel) {
+        newLevel += 1;
+      }
+
+      // Logic Evolusi Otomatis berdasarkan Level
+      if (newLevel >= 10) newPhase = "Dewasa";
+      else if (newLevel >= 5) newPhase = "Remaja";
+      else if (newLevel >= 2) newPhase = "Anak";
+
+      return { ...state, xp: newXp, level: newLevel, phase: newPhase };
+    }
+
+    case "TAMBAH_KOIN": return { ...state, koin: state.koin + action.payload };
+    case "KURANGI_KOIN": return { ...state, koin: Math.max(0, state.koin - action.payload) };
+    case "GUNAKAN_ENERGI": return { ...state, energi: Math.max(0, state.energi - action.payload) };
+    case "TAMBAH_ENERGI": return { ...state, energi: Math.min(state.maxEnergi, state.energi + action.payload) };
     case "SET_SFX_VOLUME":
       return { ...state, sfxVolume: action.payload };
     case "SET_LOADING":
@@ -172,19 +232,8 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return { ...state, volume: action.payload };
     case "LOAD_STATE":
       return { ...initialState, ...action.payload, isLoading: false };
-    case "TAMBAH_XP":
-      return { ...state, xp: state.xp + action.payload };
     case "GUNAKAN_ENERGI":
       return { ...state, energi: Math.max(0, state.energi - action.payload) };
-    case "TAMBAH_ENERGI":
-      return {
-        ...state,
-        energi: Math.min(state.maxEnergi, state.energi + action.payload),
-      };
-    case "TAMBAH_KOIN":
-      return { ...state, koin: state.koin + action.payload };
-    case "KURANGI_KOIN":
-      return { ...state, koin: Math.max(0, state.koin - action.payload) };
 
     case "GANTI_OUTFIT":
       return {
@@ -193,11 +242,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           ...state.currentOutfit,
           [action.payload.itemType]: action.payload.itemId,
         },
-      };
-    case "SET_APPEARANCE":
-      return {
-        ...state,
-        selectedAppearance: action.payload,
       };
 
     // --- LOGIKA MAKANAN ---

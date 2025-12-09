@@ -6,16 +6,15 @@ import { Stack, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { AppState, Platform, StyleSheet, View } from "react-native";
 import { GameProvider, useGameContext } from "./context/GameContext";
 
-// Mencegah splash screen hilang otomatis sampai kita siap
+// Mencegah splash screen hilang otomatis sampai aset siap
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // --- KONSTANTA AUDIO ---
 export type TrackName = "home" | "game" | "kuis" | "minigame";
-export type SFXName = "quiz_done" | "quiz_correct" | "quiz_wrong" | "tap" | "tap2" | "eat" | 
-"bomb";
+export type SFXName = "quiz_done" | "quiz_correct" | "quiz_wrong" | "tap" | "tap2";
 
 // Map BGM
 const trackMap: Record<TrackName, any> = {
@@ -32,8 +31,6 @@ const sfxMap: Record<SFXName, any> = {
   quiz_wrong: require("@/assets/audio/quiz_wrong.mp3"),
   tap: require("@/assets/audio/tap.mp3"),
   tap2: require("@/assets/audio/tap2.mp3"),
-  eat: require("@/assets/audio/eat.mp3"),
-  bomb: require("@/assets/audio/bomb.mp3"),
 };
 
 interface SoundRefs {
@@ -59,16 +56,16 @@ export const useSFX = () => {
 // --- AUDIO MANAGER ---
 function AudioManager({ children }: { children: React.ReactNode }) {
   const { state } = useGameContext();
-  const pathname = usePathname();
   
   const soundRef = useRef<SoundRefs>({ 
     bgm: { home: null, game: null, kuis: null, minigame: null }, 
-    sfx: { quiz_done: null, quiz_correct: null, quiz_wrong: null, tap: null, tap2: null, eat: null, bomb: null }
+    sfx: { quiz_done: null, quiz_correct: null, quiz_wrong: null, tap: null, tap2: null }
   });
   
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeTrack, setActiveTrack] = useState<TrackName | null>(null);
 
+  // Helper load sound aman
   const loadSound = async (source: any, isLooping: boolean, initialVolume: number) => {
     try {
       const { sound } = await Audio.Sound.createAsync(
@@ -82,7 +79,7 @@ function AudioManager({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 1. Muat Audio
+  // 1. Muat Audio (Hanya Sekali di Awal)
   useEffect(() => {
     const initAudio = async () => {
       try {
@@ -105,17 +102,13 @@ function AudioManager({ children }: { children: React.ReactNode }) {
           Promise.all(sfxPromises)
         ]);
 
-        bgmResults.forEach(({ key, sound }) => {
-          (soundRef.current.bgm as any)[key] = sound;
-        });
-        sfxResults.forEach(({ key, sound }) => {
-          (soundRef.current.sfx as any)[key] = sound;
-        });
+        bgmResults.forEach(({ key, sound }) => { (soundRef.current.bgm as any)[key] = sound; });
+        sfxResults.forEach(({ key, sound }) => { (soundRef.current.sfx as any)[key] = sound; });
 
         setIsLoaded(true);
       } catch (e) {
-        console.warn("Audio Manager Error:", e);
-        setIsLoaded(true);
+        console.warn("Audio Init Error:", e);
+        setIsLoaded(true); // Tetap lanjut agar app tidak stuck
       }
     };
 
@@ -127,7 +120,13 @@ function AudioManager({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // 2. Logic Track Aktif
+  // 2. Logic Track Aktif (State Minigame harus diambil dari context, bukan pathname untuk minigame)
+  // Tapi di kode sebelumnya kita pake pathname untuk logic dasar
+  // Kita perlu akses pathname di sini, tapi usePathname harus di dalam komponen yg ada di dalam Router context?
+  // AudioManager ada di _layout jadi aman pake usePathname dari expo-router
+  // UPDATE: Pindahkan usePathname ke dalam AudioManager
+  const pathnameHook = usePathname(); // Kita rename biar gak clash
+
   useEffect(() => {
     if (!isLoaded) return;
     
@@ -137,14 +136,14 @@ function AudioManager({ children }: { children: React.ReactNode }) {
     }
 
     let newTrack: TrackName | null = null;
-    if (pathname === "/" || pathname === "/pantai") newTrack = "home";
-    else if (["/kamar", "/dapur", "/ruangTamu"].includes(pathname)) newTrack = "game";
-    else if (pathname.startsWith("/kuis") || pathname === "/kelas" || pathname === "/riwayat") newTrack = "kuis";
+    if (pathnameHook === "/" || pathnameHook === "/pantai") newTrack = "home";
+    else if (["/kamar", "/dapur", "/ruangTamu"].includes(pathnameHook)) newTrack = "game";
+    else if (pathnameHook.startsWith("/kuis") || pathnameHook === "/kelas" || pathnameHook === "/riwayat") newTrack = "kuis";
     
     setActiveTrack(newTrack);
-  }, [pathname, isLoaded, state.isMinigameActive]);
+  }, [pathnameHook, isLoaded, state.isMinigameActive]);
 
-  // 3. Play/Pause BGM
+  // 3. Play/Pause BGM Logic
   useEffect(() => {
     if (!isLoaded) return;
     
@@ -161,26 +160,47 @@ function AudioManager({ children }: { children: React.ReactNode }) {
             if (status.isPlaying) await sound.pauseAsync();
           }
         } catch (e) {
-          // Ignore
+          // ignore error
         }
       }
     };
     managePlayback();
   }, [activeTrack, isLoaded]);
 
-  // 4. Update Volume BGM
+  // 4. Update Volume
   useEffect(() => {
     if (!isLoaded) return;
-    Object.values(soundRef.current.bgm).forEach(s => s?.setVolumeAsync(state.volume).catch(() => {}));
-  }, [state.volume, isLoaded]);
 
-  // 5. Update Volume SFX
-  useEffect(() => {
-    if (!isLoaded) return;
-    Object.values(soundRef.current.sfx).forEach(s => s?.setVolumeAsync(state.sfxVolume).catch(() => {}));
-  }, [state.sfxVolume, isLoaded]);
+    const updateAllVolumes = async () => {
+      // Update BGM
+      for (const sound of Object.values(soundRef.current.bgm)) {
+        if (sound) {
+          try {
+            const status = await sound.getStatusAsync();
+            if (status.isLoaded) {
+              await sound.setVolumeAsync(state.volume);
+            }
+          } catch (e) { console.warn("Vol BGM Error:", e); }
+        }
+      }
 
-  // 6. Helper Functions
+      // Update SFX
+      for (const sound of Object.values(soundRef.current.sfx)) {
+        if (sound) {
+          try {
+            const status = await sound.getStatusAsync();
+            if (status.isLoaded) {
+              await sound.setVolumeAsync(state.sfxVolume);
+            }
+          } catch (e) { console.warn("Vol SFX Error:", e); }
+        }
+      }
+    };
+
+    updateAllVolumes();
+  }, [state.volume, state.sfxVolume, isLoaded]); 
+
+  // 5. Helper Functions
   const playSfx = useCallback((name: SFXName) => {
     const sound = soundRef.current.sfx[name];
     if (sound) {
@@ -192,6 +212,20 @@ function AudioManager({ children }: { children: React.ReactNode }) {
     const randomSfx = Math.random() > 0.5 ? "tap" : "tap2";
     playSfx(randomSfx);
   }, [playSfx]);
+
+  // 6. Handle Background/Foreground App State
+  useEffect(() => {
+    if (!isLoaded) return;
+    const subscription = AppState.addEventListener("change", async (nextAppState) => {
+      const soundToControl = activeTrack ? soundRef.current.bgm[activeTrack] : null;
+      if (!soundToControl) return;
+      try {
+        if (nextAppState.match(/inactive|background/)) await soundToControl.pauseAsync();
+        else if (nextAppState === "active") await soundToControl.playAsync();
+      } catch (e) {}
+    });
+    return () => { subscription.remove(); };
+  }, [isLoaded, activeTrack]);
 
   return (
     <SFXContext.Provider value={{ playSfx, playBtnSound }}>
@@ -221,11 +255,10 @@ export default function RootLayout() {
   return (
     <GameProvider>
       <AudioManager>
-        {/* WRAPPER LAYOUT */}
+        {/* WRAPPER LAYOUT (Fix Web Layout) */}
+        {/* Perhatikan baris di bawah ini sudah diperbaiki */}
         <View style={isWeb ? styles.webContainer : styles.nativeContainer}>
           <StatusBar style="light" />
-          
-          {/* FRAME KONTEN */}
           <View style={isWeb ? styles.webFrame : styles.nativeFrame}>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
@@ -240,19 +273,16 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  nativeContainer: {
-    flex: 1,
-  },
-  nativeFrame: {
-    flex: 1,
-  },
+  nativeContainer: { flex: 1 },
+  nativeFrame: { flex: 1 },
   webContainer: {
     flex: 1,
     backgroundColor: "#121212",
     alignItems: "center",
     justifyContent: "center",
     minHeight: "100%",
-    // height: "100vh", // Opsional jika perlu fix height
+    // Gunakan 'any' casting jika TypeScript protes soal '100vh'
+    height: Platform.OS === "web" ? ("100vh" as any) : "100%", 
   },
   webFrame: {
     flex: 1,

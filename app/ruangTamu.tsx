@@ -1,6 +1,6 @@
 // Di dalam file: app/ruangTamu.tsx
 
-import { useSFX } from "@/app/_layout"; // <-- Import useSFX
+import { useSFX } from "@/app/_layout";
 import { CulaCharacter } from "@/app/components/CulaCharacter";
 import { GameHUDLayout } from "@/app/components/GameHUDLayout";
 import { useGameContext } from "@/app/context/GameContext";
@@ -23,7 +23,6 @@ import {
   View,
 } from "react-native";
 
-// Definisikan Props secara lokal untuk keamanan
 interface ModalDekorasiProps {
   visible: boolean;
   onClose: () => void;
@@ -35,7 +34,7 @@ const ModalDekorasi: React.FC<ModalDekorasiProps> = ({ visible, onClose }) => {
   const { playSfx, playBtnSound } = useSFX(); 
 
   const handleGantiDekorasi = (itemId: string | null) => {
-    playSfx("tap"); // SFX Tap saat ganti dekorasi
+    playSfx("tap"); 
 
     dispatch({
       type: "GANTI_OUTFIT",
@@ -47,6 +46,7 @@ const ModalDekorasi: React.FC<ModalDekorasiProps> = ({ visible, onClose }) => {
   const getLabel = (id: string) => {
     if (id === "dekor-golok") return "Golok";
     if (id === "dekor-bedug") return "Bedug";
+    if (id === "dekor-lukisan") return "Lukisan";
     return id;
   };
 
@@ -97,7 +97,7 @@ const ModalDekorasi: React.FC<ModalDekorasiProps> = ({ visible, onClose }) => {
           <TouchableOpacity
             style={[styles.modalButton, styles.kembaliButton]}
             onPress={() => {
-              playBtnSound(); // SFX Tutup Modal
+              playBtnSound();
               onClose();
             }}
           >
@@ -128,35 +128,31 @@ export default function RuangTamuScreen() {
           • <Text style={styles.bold}>Dekorasi:</Text> Beli item dekorasi di Toko
           Budaya, lalu pasang di sini.
           {"\n"}• <Text style={styles.bold}>Contoh:</Text> Pajangan Golok, Bedug,
-          dll.
+          Lukisan, dll.
         </Text>
       </View>
     ),
   };
 
-  // Mapping Gambar Dekorasi (Opsional)
-  const getDekorasiImage = (
-    id: string | null
-  ): ImageSourcePropType | undefined => {
-    if (id === "dekor-golok")
-      return require("@/assets/images/deco/golok.png");
-    if (id === "dekor-bedug")
-      return require("@/assets/images/deco/bedug.png");
-    return undefined;
+  // Helper untuk menentukan Background Image
+  const getBackgroundImage = (aksesorisId: string | null): ImageSourcePropType => {
+    if (aksesorisId === "dekor-lukisan") {
+      return require("@/assets/images/guest-deco2.png");
+    }
+    if (aksesorisId) {
+      return require("@/assets/images/guest-deco.png");
+    }
+    return require("@/assets/images/guest.png");
   };
 
   return (
     <GameHUDLayout
-      backgroundImage={
-        state.currentOutfit.aksesorisId
-          ? require("@/assets/images/guest-deco.png") // BG saat ada dekorasi
-          : require("@/assets/images/guest.png") // BG polos
-      }
+      backgroundImage={getBackgroundImage(state.currentOutfit.aksesorisId)}
       onPressNavLeft={() => router.replace("/kamar")}
       onPressNavRight={() => router.replace("/dapur")}
       helpContent={ruangTamuHelpContent}
       middleNavButton={{
-        onPress: () => setModalVisible(true), // SFX handled by Layout
+        onPress: () => setModalVisible(true),
         icon: <MaterialCommunityIcons name="lamp" size={24} color="white" />,
         text: "Dekorasi",
       }}
@@ -175,11 +171,9 @@ export default function RuangTamuScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Styles Help
   helpText: { fontSize: 16, color: "#333", lineHeight: 24, marginBottom: 5 },
   bold: { fontWeight: "bold", color: "#4A2A00" },
 
-  // Styles Page
   kontenArea: {
     flex: 1,
     justifyContent: "flex-end",
@@ -191,16 +185,7 @@ const styles = StyleSheet.create({
     height: 300,
     resizeMode: "contain",
   },
-  dekorasiOverlay: {
-    position: "absolute",
-    top: 100,
-    right: 20,
-    width: 100,
-    height: 100,
-    zIndex: 0,
-  },
-
-  // Styles Modal
+  
   modalBackdrop: {
     flex: 1,
     justifyContent: "center",

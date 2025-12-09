@@ -78,6 +78,7 @@ export interface HelpContent {
 // Tipe State Utama
 export interface GameState {
   phase: CulaPhase;
+  level: number; // <--- WAJIB ADA (untuk syarat buka Bab Kuis)
   xp: number;
   xpToNextLevel: number;
   selectedAppearance: AppearanceMode;
@@ -104,6 +105,9 @@ export interface GameState {
 // Tipe Aksi
 export type GameAction =
   | { type: "SET_LOADING"; payload: boolean }
+  | { type: "CHEAT_SET_PHASE"; payload: CulaPhase } // <-- Action Baru
+  | { type: "CHEAT_MODIFY_KOIN"; payload: number }  // <-- Generic Coin
+  | { type: "CHEAT_MODIFY_ENERGI"; payload: number } // <-- Generic Energi
   | { type: "LOAD_STATE"; payload: Partial<GameState> }
   | { type: "TAMBAH_XP"; payload: number }
   | { type: "GUNAKAN_ENERGI"; payload: number }
@@ -162,6 +166,11 @@ export interface ModalPengaturanProps {
   onTambahEnergi?: () => void;
   onDapatKoin?: () => void;
   onDapatXP?: () => void;
+
+  // Update Callback Cheats
+  onCheatPhase: (phase: CulaPhase) => void;
+  onCheatCoin: (amount: number) => void;
+  onCheatEnergy: (amount: number) => void;
 }
 
 export interface ModalNavigasiProps {

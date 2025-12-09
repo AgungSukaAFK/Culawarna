@@ -1,9 +1,10 @@
 // Di dalam file: app/components/GameHUDLayout.tsx
 
-import { useSFX } from "@/app/_layout"; // <-- 1. Import useSFX
+import { useSFX } from "@/app/_layout";
 import { useGameContext } from "@/app/context/GameContext";
 import {
   AppearanceMode,
+  CulaPhase,
   HelpContent,
   ModalNavigasiProps,
   ModalPengaturanProps,
@@ -24,6 +25,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -35,7 +37,7 @@ const ModalHelp: React.FC<{
   content?: HelpContent;
   onClose: () => void;
 }> = ({ visible, content, onClose }) => {
-  const { playBtnSound } = useSFX(); // Sound Hook
+  const { playBtnSound } = useSFX();
 
   if (!content) return null;
 
@@ -59,7 +61,7 @@ const ModalHelp: React.FC<{
           <TouchableOpacity
             style={[styles.modalButton, styles.kembaliButton]}
             onPress={() => {
-              playBtnSound(); // SFX
+              playBtnSound();
               onClose();
             }}
           >
@@ -79,7 +81,7 @@ const NavButton: React.FC<NavButtonProps> = ({ onPress, icon, text }) => {
     <TouchableOpacity 
       style={styles.navButton} 
       onPress={() => {
-        playBtnSound(); // SFX
+        playBtnSound();
         onPress();
       }}
     >
@@ -89,24 +91,41 @@ const NavButton: React.FC<NavButtonProps> = ({ onPress, icon, text }) => {
   );
 };
 
-// --- MODAL PENGATURAN (UPDATE: SLIDER SFX) ---
+// --- MODAL PENGATURAN (DENGAN CHEAT) ---
 const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
   visible,
   onClose,
   onExit,
   volume,
   setVolume,
-  sfxVolume,      // <-- Props Baru
-  setSfxVolume,   // <-- Props Baru
+  sfxVolume,
+  setSfxVolume,
   selectedAppearance,
   setAppearance,
-  onGunakanEnergi,
-  onTambahEnergi,
-  onDapatKoin,
-  onDapatXP,
+  // Props Cheat
+  onCheatPhase,
+  onCheatCoin,
+  onCheatEnergy,
 }) => {
   const { playBtnSound } = useSFX();
   const appearanceOptions: AppearanceMode[] = ["Default", "Baby", "Anak", "Remaja", "Dewasa"];
+  const cheatPhases: CulaPhase[] = ["Baby", "Anak", "Remaja", "Dewasa"];
+
+  // State Lokal untuk Password Cheat
+  const [cheatPassword, setCheatPassword] = useState("");
+  const [isCheatUnlocked, setCheatUnlocked] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
+
+  const handleUnlockCheat = () => {
+    playBtnSound();
+    if (cheatPassword.toUpperCase() === "CULA") {
+      setCheatUnlocked(true);
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+      setCheatPassword("");
+    }
+  };
 
   return (
     <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
@@ -115,33 +134,34 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
           <ScrollView contentContainerStyle={{ alignItems: "center" }} style={{ width: "100%" }}>
             <Text style={styles.modalTitle}>Pengaturan</Text>
 
-            {/* BGM Slider */}
+            {/* AUDIO SETTINGS */}
             <Text style={styles.sliderLabel}>Volume Musik</Text>
             <Slider
               style={styles.slider}
               minimumValue={0}
               maximumValue={1}
               value={volume}
+              step={0.05}
               onValueChange={setVolume}
               minimumTrackTintColor="#4B0082"
               maximumTrackTintColor="#D3D3D3"
               thumbTintColor="#4B0082"
             />
 
-            {/* SFX Slider (BARU) */}
             <Text style={styles.sliderLabel}>Volume Efek Suara</Text>
             <Slider
               style={styles.slider}
               minimumValue={0}
               maximumValue={1}
               value={sfxVolume}
-              onValueChange={setSfxVolume} // Gunakan setSfxVolume
-              minimumTrackTintColor="#E67E22" // Warna Oranye
+              step={0.05}
+              onValueChange={setSfxVolume}
+              minimumTrackTintColor="#E67E22"
               maximumTrackTintColor="#D3D3D3"
               thumbTintColor="#E67E22"
             />
 
-            {/* Appearance */}
+            {/* TAMPILAN KARAKTER */}
             <Text style={[styles.sliderLabel, { marginTop: 15 }]}>Tampilan Si Cula</Text>
             <Text style={styles.subLabel}>(Ubah visual tanpa ubah level)</Text>
             
@@ -154,7 +174,7 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
                     selectedAppearance === mode && styles.appearanceButtonActive
                   ]}
                   onPress={() => {
-                    playBtnSound(); // SFX
+                    playBtnSound();
                     setAppearance(mode);
                   }}
                 >
@@ -168,24 +188,72 @@ const ModalPengaturan: React.FC<ModalPengaturanProps> = ({
               ))}
             </View>
 
-            {/* Debug Buttons */}
+            {/* --- AREA CHEAT / DEVELOPER --- */}
             <View style={styles.debugSection}>
-              <Text style={styles.debugTitle}>-- Tombol Testing --</Text>
-              <TouchableOpacity style={styles.debugButton} onPress={() => { playBtnSound(); onGunakanEnergi?.(); }}>
-                <Text>Gunakan Energi (-10)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.debugButton} onPress={() => { playBtnSound(); onTambahEnergi?.(); }}>
-                <Text>Tambah Energi (+20)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.debugButton} onPress={() => { playBtnSound(); onDapatKoin?.(); }}>
-                <Text>Dapat Koin (+5)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.debugButton} onPress={() => { playBtnSound(); onDapatXP?.(); }}>
-                <Text>Dapat XP (+3)</Text>
-              </TouchableOpacity>
+              <Text style={styles.debugTitle}>-- Developer Mode --</Text>
+              
+              {!isCheatUnlocked ? (
+                // TAMPILAN TERKUNCI
+                <View style={{ width: '100%', alignItems: 'center' }}>
+                  <TextInput
+                    style={[styles.passwordInput, passwordError && { borderColor: 'red', borderWidth: 2 }]}
+                    placeholder="Masukkan Password..."
+                    placeholderTextColor="#999"
+                    value={cheatPassword}
+                    onChangeText={(t) => { setCheatPassword(t); setPasswordError(false); }}
+                    secureTextEntry={false} // Ubah ke true jika ingin bintang-bintang
+                    autoCapitalize="characters"
+                  />
+                  {passwordError && <Text style={{color:'red', fontSize: 10, marginBottom: 5}}>Password Salah!</Text>}
+                  
+                  <TouchableOpacity style={styles.unlockButton} onPress={handleUnlockCheat}>
+                    <Text style={styles.unlockButtonText}>Buka Fitur Cheat</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                // TAMPILAN TERBUKA
+                <View style={{ width: '100%', alignItems: 'center' }}>
+                  
+                  {/* 1. Cheat Fase */}
+                  <Text style={styles.cheatSubLabel}>Pilih Fase (Evolusi Instan):</Text>
+                  <View style={styles.cheatGrid}>
+                    {cheatPhases.map((phase) => (
+                      <TouchableOpacity 
+                        key={phase} 
+                        style={styles.cheatButton} 
+                        onPress={() => { playBtnSound(); onCheatPhase(phase); }}
+                      >
+                        <Text style={styles.cheatButtonText}>{phase}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* 2. Cheat Koin */}
+                  <Text style={styles.cheatSubLabel}>Koin:</Text>
+                  <View style={styles.cheatRow}>
+                    <TouchableOpacity style={styles.cheatResourceBtn} onPress={() => { playBtnSound(); onCheatCoin(50); }}>
+                      <Text style={styles.cheatButtonText}>+50</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.cheatResourceBtn, styles.btnRed]} onPress={() => { playBtnSound(); onCheatCoin(-50); }}>
+                      <Text style={styles.cheatButtonText}>-50</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* 3. Cheat Energi */}
+                  <Text style={styles.cheatSubLabel}>Energi:</Text>
+                  <View style={styles.cheatRow}>
+                    <TouchableOpacity style={styles.cheatResourceBtn} onPress={() => { playBtnSound(); onCheatEnergy(10); }}>
+                      <Text style={styles.cheatButtonText}>+10</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.cheatResourceBtn, styles.btnRed]} onPress={() => { playBtnSound(); onCheatEnergy(-10); }}>
+                      <Text style={styles.cheatButtonText}>-10</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                </View>
+              )}
             </View>
 
-            {/* Tombol Bawah */}
             <View style={styles.modalButtonRow}>
               <TouchableOpacity style={[styles.modalButton, styles.kembaliButton]} onPress={() => { playBtnSound(); onClose(); }}>
                 <Ionicons name="arrow-back" size={16} color="white" />
@@ -275,7 +343,7 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
 }) => {
   const router = useRouter();
   const { state, dispatch } = useGameContext();
-  const { playBtnSound } = useSFX(); // SFX Hook
+  const { playBtnSound } = useSFX(); 
 
   const [isPengaturanVisible, setPengaturanVisible] = useState<boolean>(false);
   const [isEnergiVisible, setEnergiVisible] = useState<boolean>(false);
@@ -294,6 +362,12 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
     }
   };
 
+  // Dispatchers untuk Cheat
+  const handleCheatPhase = (phase: CulaPhase) => dispatch({ type: "CHEAT_SET_PHASE", payload: phase });
+  const handleCheatCoin = (amount: number) => dispatch({ type: "CHEAT_MODIFY_KOIN", payload: amount });
+  const handleCheatEnergy = (amount: number) => dispatch({ type: "CHEAT_MODIFY_ENERGI", payload: amount });
+
+  // Legacy Handlers (Opsional, untuk props legacy jika ada yang pakai)
   const handleGunakanEnergi = () => dispatch({ type: "GUNAKAN_ENERGI", payload: 10 });
   const handleTambahEnergi = () => dispatch({ type: "TAMBAH_ENERGI", payload: 20 });
   const handleDapatKoin = () => dispatch({ type: "TAMBAH_KOIN", payload: 5 });
@@ -436,12 +510,18 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
           volume={state.volume}
           setVolume={(val: any) => dispatch({ type: "SET_VOLUME", payload: val })}
           
-          sfxVolume={state.sfxVolume} // Pass State
-          setSfxVolume={(val: any) => dispatch({ type: "SET_SFX_VOLUME", payload: val })} // Pass Setter
+          sfxVolume={state.sfxVolume}
+          setSfxVolume={(val: any) => dispatch({ type: "SET_SFX_VOLUME", payload: val })}
 
           selectedAppearance={state.selectedAppearance || "Default"}
           setAppearance={(mode) => dispatch({ type: "SET_APPEARANCE", payload: mode })}
           
+          // Cheat Callbacks
+          onCheatPhase={handleCheatPhase}
+          onCheatCoin={handleCheatCoin}
+          onCheatEnergy={handleCheatEnergy}
+          
+          // Legacy Debug (Tetap ada agar tidak error TS, tapi tidak dipakai UI)
           onGunakanEnergi={handleGunakanEnergi}
           onTambahEnergi={handleTambahEnergi}
           onDapatKoin={handleDapatKoin}
@@ -456,7 +536,6 @@ export const GameHUDLayout: React.FC<GameHUDLayoutProps> = ({
   );
 };
 
-// --- STYLESHEET (Copy paste dari file sebelumnya, tidak berubah) ---
 const styles = StyleSheet.create({
   container: { flex: 1, width: "100%", height: "100%", position: "relative", overflow: "hidden", backgroundColor: "black" },
   videoStyle: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%", position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
@@ -470,7 +549,7 @@ const styles = StyleSheet.create({
   textNama: { fontSize: 20, fontWeight: "bold", color: "black" },
   textXP: { fontSize: 14, color: "black" },
   textKoin: { fontSize: 18, fontWeight: "bold", color: "black", marginLeft: 5 },
-  tombolEnergi: { backgroundColor: "#555", width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: "white", elevation: 3, justifyContent: "center", alignItems: "center", overflow: "hidden", cursor: "pointer" },
+  tombolEnergi: { backgroundColor: "#555", width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: "white", elevation: 3, justifyContent: "center", alignItems: "center", overflow: "hidden" },
   energiFill: { backgroundColor: "#FFC107", position: "absolute", bottom: 0, left: 0, right: 0 },
   energiIcon: { zIndex: 1, textShadowColor: "rgba(0, 0, 0, 0.3)", textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
   energiModal: { position: "absolute", top: Platform.OS === "web" ? 70 : 110, alignSelf: "center", backgroundColor: "white", padding: 10, borderRadius: 10, elevation: 5, zIndex: 20 },
@@ -482,9 +561,9 @@ const styles = StyleSheet.create({
   helpScroll: { width: "100%", marginBottom: 20 },
   helpBody: { fontSize: 16, color: "#333", lineHeight: 24, textAlign: "left" },
   intraNavContainer: { position: "absolute", bottom: 100, left: 15, right: 15, flexDirection: "row", justifyContent: "space-between", zIndex: 5, maxWidth: 800, alignSelf: "center" },
-  intraNavButton: { opacity: 0.7, cursor: "pointer" },
+  intraNavButton: { opacity: 0.7 },
   hudBawah: { position: "absolute", bottom: 0, left: 0, right: 0, height: 90, flexDirection: "row", justifyContent: "space-around", alignItems: "flex-start", backgroundColor: "rgba(255, 255, 255, 0.7)", borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 10, width: "100%", maxWidth: 800, alignSelf: "center" },
-  navButton: { flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: "#8A2BE2", paddingVertical: 8, paddingHorizontal: 10, borderRadius: 20, width: 100, height: 70, elevation: 3, borderBottomWidth: 4, borderColor: "#4B0082", cursor: "pointer" },
+  navButton: { flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: "#8A2BE2", paddingVertical: 8, paddingHorizontal: 10, borderRadius: 20, width: 100, height: 70, elevation: 3, borderBottomWidth: 4, borderColor: "#4B0082" },
   navButtonText: { color: "white", fontWeight: "bold", fontSize: 12, marginTop: 4 },
   modalBackdrop: { flex: 1, justifyContent: "center", alignItems: "center" },
   modalContainer: { width: "90%", maxWidth: 340, maxHeight: "80%", backgroundColor: "#FFB347", borderRadius: 20, borderWidth: 5, borderColor: "#4A2A00", padding: 20 },
@@ -492,16 +571,28 @@ const styles = StyleSheet.create({
   sliderLabel: { fontSize: 16, color: "#4A2A00", marginBottom: 10, alignSelf: "flex-start" },
   slider: { width: "100%", height: 40, marginBottom: 20 },
   modalButtonRow: { flexDirection: "row", justifyContent: "space-around", width: "100%", marginTop: 20 },
-  modalButton: { flexDirection: "row", paddingVertical: 8, paddingHorizontal: 15, borderRadius: 15, alignItems: "center", justifyContent: "center", borderBottomWidth: 4, cursor: "pointer" },
+  modalButton: { flexDirection: "row", paddingVertical: 8, paddingHorizontal: 15, borderRadius: 15, alignItems: "center", justifyContent: "center", borderBottomWidth: 4 },
   modalButtonText: { color: "white", fontSize: 14, fontWeight: "bold", marginLeft: 5 },
   kembaliButton: { backgroundColor: "#8A2BE2", borderColor: "#4B0082" },
   keluarButton: { backgroundColor: "#DC143C", borderColor: "#8B0000" },
   navigasiGrid: { width: "100%", alignItems: "center" },
-  navigasiModalButton: { backgroundColor: "rgba(255, 255, 255, 0.7)", padding: 15, borderRadius: 10, borderWidth: 2, borderColor: "#4A2A00", width: "100%", alignItems: "center", flexDirection: "row", marginBottom: 10, cursor: "pointer" },
+  navigasiModalButton: { backgroundColor: "rgba(255, 255, 255, 0.7)", padding: 15, borderRadius: 10, borderWidth: 2, borderColor: "#4A2A00", width: "100%", alignItems: "center", flexDirection: "row", marginBottom: 10 },
   navigasiModalText: { color: "#4A2A00", fontWeight: "bold", fontSize: 16, marginLeft: 15 },
+  
+  // Style Debug/Cheat
   debugSection: { width: "100%", borderTopWidth: 2, borderBottomWidth: 2, borderColor: "#4A2A00", paddingVertical: 15, marginVertical: 15, alignItems: "center" },
   debugTitle: { fontSize: 16, fontWeight: "bold", color: "#4A2A00", marginBottom: 10 },
-  debugButton: { backgroundColor: "#FFF", padding: 10, borderRadius: 5, marginTop: 10, borderColor: "#CCC", borderWidth: 1, cursor: "pointer" },
+  passwordInput: { width: '80%', backgroundColor: 'white', padding: 10, borderRadius: 10, marginBottom: 10, borderWidth: 1, borderColor: '#ccc', textAlign: 'center', color: '#333', fontWeight: 'bold' },
+  unlockButton: { backgroundColor: '#34495E', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
+  unlockButtonText: { color: 'white', fontWeight: 'bold' },
+  cheatSubLabel: { fontSize: 14, color: "#4A2A00", marginBottom: 5, marginTop: 10, fontWeight: 'bold' },
+  cheatGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 10 },
+  cheatButton: { backgroundColor: '#2C3E50', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, minWidth: 60, alignItems: 'center' },
+  cheatButtonText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
+  cheatRow: { flexDirection: 'row', gap: 10, marginBottom: 5, width: '80%', justifyContent: 'center' },
+  cheatResourceBtn: { backgroundColor: '#27AE60', padding: 10, borderRadius: 8, flex: 1, alignItems: 'center' },
+  btnRed: { backgroundColor: '#C0392B' },
+  
   subLabel: { fontSize: 12, color: "#666", marginBottom: 10, fontStyle: "italic" },
   appearanceGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", width: "100%", marginBottom: 10 },
   appearanceButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 2, borderColor: "#4A2A00", margin: 4, backgroundColor: "rgba(255, 255, 255, 0.5)" },
